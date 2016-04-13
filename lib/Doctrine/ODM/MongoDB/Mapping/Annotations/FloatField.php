@@ -23,7 +23,7 @@ namespace Doctrine\ODM\MongoDB\Mapping\Annotations;
  * @Annotation
  * @deprecated This class will be removed in ODM 2.0
  */
-final class Int extends AbstractField
+final class FloatField extends AbstractField
 {
-    public $type = 'int';
+    public $type = 'float';
 }
