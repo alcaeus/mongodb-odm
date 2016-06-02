@@ -106,6 +106,9 @@ class GH1418Embedded
     /** @ODM\Field(type="string") */
     public $name;
 
-    /** @ODM\AlsoLoad("alsoLoadMe") **/
+    /**
+     * @ODM\Field(type="int")
+     * @ODM\AlsoLoad("alsoLoadMe")
+     * **/
     public $alsoLoadValue;
 }
