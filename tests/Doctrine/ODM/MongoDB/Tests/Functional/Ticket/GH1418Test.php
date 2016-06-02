@@ -13,9 +13,9 @@ class GH1418Test extends \Doctrine\ODM\MongoDB\Tests\BaseTest
         $this->dm->getHydratorFactory()->hydrate($document, array(
           '_id' => 1,
           'name' => 'maciej',
-          'embedOne' => ['name' => 'maciej'],
+          'embedOne' => ['name' => 'maciej', 'alsoLoadMe' => 1],
           'embedMany' => [
-              ['name' => 'maciej']
+              ['name' => 'maciej', 'alsoLoadMe' => 1]
           ],
         ), [ Query::HINT_READ_ONLY => true ]);
 
@@ -28,6 +28,8 @@ class GH1418Test extends \Doctrine\ODM\MongoDB\Tests\BaseTest
         $this->assertEquals('maciej', $document->embedOne->name);
         $this->assertEquals(1, $document->embedMany->count());
         $this->assertEquals('maciej', $document->embedMany->first()->name);
+        $this->assertEquals(1, $document->embedOne->alsoLoadValue);
+        $this->assertEquals(1, $document->embedMany->first()->alsoLoadValue);
     }
 
     public function testReadDocumentAndManage()
@@ -103,4 +105,7 @@ class GH1418Embedded
 {
     /** @ODM\Field(type="string") */
     public $name;
+
+    /** @ODM\AlsoLoad("alsoLoadMe") **/
+    public $alsoLoadValue;
 }
