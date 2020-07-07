@@ -133,7 +133,7 @@ class CollectionPersisterTest extends BaseTest
 
         $this->logger->clear();
         $this->dm->flush();
-        $this->assertCount(2, $this->logger, 'Modification of several embedded-many collections of one document requires two queries');
+        $this->assertCount(1, $this->logger, 'Modification of several embedded-many collections of one document requires two queries');
 
         $check = $this->dm->getDocumentCollection(CollectionPersisterUser::class)->findOne(['username' => 'jwage']);
 
@@ -150,7 +150,7 @@ class CollectionPersisterTest extends BaseTest
         unset($user->categories[1]);
         $this->logger->clear();
         $this->dm->flush();
-        $this->assertCount(2, $this->logger, 'Modification of embedded-many collection of one document requires two queries');
+        $this->assertCount(1, $this->logger, 'Modification of embedded-many collection of one document requires two queries');
 
         $check = $this->dm->getDocumentCollection(CollectionPersisterUser::class)->findOne(['username' => 'jwage']);
         $this->assertFalse(isset($check['categories'][0]));
@@ -446,7 +446,7 @@ class CollectionPersisterTest extends BaseTest
         $this->assertCount(
             2,
             $this->logger,
-            'Modification of embedded-many collections of one document by "addToSet" strategy requires two queries'
+            'Modification of embedded-many collections of one document by "addToSet" strategy requires additional queries'
         );
 
         $this->assertSame($structure, $this->dm->getRepository(get_class($structure))->findOneBy(['id' => $structure->id]));
@@ -475,9 +475,9 @@ class CollectionPersisterTest extends BaseTest
         $this->dm->persist($structure);
         $this->dm->flush();
         $this->assertCount(
-            2,
+            1,
             $this->logger,
-            'Modification of embedded-many collections of one document by "pushAll" strategy requires two queries'
+            'Insertion of embedded-many collections of one document by "pushAll" strategy requires no additional queries'
         );
 
         $this->assertSame($structure, $this->dm->getRepository(get_class($structure))->findOneBy(['id' => $structure->id]));
@@ -509,9 +509,9 @@ class CollectionPersisterTest extends BaseTest
         $this->dm->persist($structure);
         $this->dm->flush();
         $this->assertCount(
-            4,
+            3,
             $this->logger,
-            'Modification of embedded-many collections of one document by "set", "setArray" and "pushAll" strategies requires two queries'
+            'Modification of embedded-many collections of one document by "set", "setArray" and "pushAll" strategies requires additional queries'
         );
 
         $this->assertSame($structure, $this->dm->getRepository(get_class($structure))->findOneBy(['id' => $structure->id]));
@@ -549,9 +549,9 @@ class CollectionPersisterTest extends BaseTest
         $this->dm->persist($structure);
         $this->dm->flush();
         $this->assertCount(
-            5,
+            4,
             $this->logger,
-            'Modification of embedded-many collections of one document by "set", "setArray" and "pushAll" strategies requires two queries'
+            'Modification of embedded-many collections of one document by "set", "setArray" and "pushAll" strategies requires additional queries'
         );
 
         $this->assertSame($structure, $this->dm->getRepository(get_class($structure))->findOneBy(['id' => $structure->id]));

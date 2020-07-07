@@ -26,6 +26,7 @@ use function count;
 use function end;
 use function get_class;
 use function implode;
+use function rsort;
 use function sort;
 use function strpos;
 use function substr;
@@ -215,32 +216,62 @@ final class CollectionPersister
             $deleteDiffMap[$propertyPath] = $deleteDiff;
         }
 
-        $paths        = $this->excludeSubPaths($paths);
-        $deleteColls  = array_intersect_key($pathCollMap, array_flip($paths));
-        $unsetPayload = [];
-        $pullPayload  = [];
-        foreach ($deleteColls as $propertyPath => $coll) {
+        $pullPaths  = [];
+        $unsetPaths = [];
+
+        foreach ($pathCollMap as $propertyPath => $coll) {
             $deleteDiff = $deleteDiffMap[$propertyPath];
             foreach ($deleteDiff as $key => $document) {
-                $unsetPayload[$propertyPath . '.' . $key] = true;
+                $unsetPaths[] = $propertyPath . '.' . $key;
             }
-            $pullPayload[$propertyPath] = null;
+            $pullPaths[] = $propertyPath;
         }
 
-        if (! empty($unsetPayload)) {
-            $this->executeQuery($parent, ['$unset' => $unsetPayload], $options);
-        }
-        if (empty($pullPayload)) {
+        $unsetPaths = $this->excludeSubPaths($unsetPaths);
+
+        if (empty($unsetPaths) && empty($pullPaths)) {
             return;
         }
 
-        /**
-         * @todo This is a hack right now because we don't have a proper way to
-         * remove an element from an array by its key. Unsetting the key results
-         * in the element being left in the array as null so we have to pull
-         * null values.
+        $operations    = [];
+        $classMetadata = $this->dm->getClassMetadata(get_class($parent));
+        $query         = $this->getQueryForDocument($parent, $classMetadata);
+
+        /*
+         * First, update the document to unset all previously identified removed
+         * items, excluding children from parents that are unset completely.
          */
-        $this->executeQuery($parent, ['$pull' => $pullPayload], $options);
+        if (! empty($unsetPaths)) {
+            $unsetPayload = array_fill_keys($unsetPaths, true);
+            $operations[] = [
+                'updateOne' => [
+                    $query,
+                    ['$unset' => $unsetPayload],
+                ],
+            ];
+        }
+
+        /*
+         * The previous $unset operation left a bunch of items with null values
+         * in the collections. To remedy this, we execute a bulk write that will
+         * use $pull to remove all null values from affected paths. Due to this
+         * potentially creating conflicts (property.1 may be a different item
+         * after a $pull on property), we issue a series of updateOne operations
+         * in a bulk write and order them to traverse the tree from the branches
+         * up to the root property.
+         */
+        rsort($pullPaths);
+
+        foreach ($pullPaths as $path) {
+            $operations[] = [
+                'updateOne' => [
+                    $query,
+                    ['$pull' => [$path => null]],
+                ],
+            ];
+        }
+
+        $this->executeBulkWrite($parent, $operations, ['ordered' => true] + $options);
     }
 
     /**
@@ -435,16 +466,36 @@ final class CollectionPersister
     {
         $className = get_class($document);
         $class     = $this->dm->getClassMetadata($className);
-        $id        = $class->getDatabaseIdentifierValue($this->uow->getDocumentIdentifier($document));
-        $query     = ['_id' => $id];
-        if ($class->isVersioned) {
-            $query[$class->fieldMappings[$class->versionField]['name']] = $class->reflFields[$class->versionField]->getValue($document);
-        }
+        $query     = $this->getQueryForDocument($document, $class);
+
         $collection = $this->dm->getDocumentCollection($className);
         $result     = $collection->updateOne($query, $newObj, $options);
         if ($class->isVersioned && ! $result->getMatchedCount()) {
             throw LockException::lockFailed($document);
         }
+    }
+
+    private function executeBulkWrite(object $document, array $operations, array $options) : void
+    {
+        $className = get_class($document);
+        $class     = $this->dm->getClassMetadata($className);
+
+        $collection = $this->dm->getDocumentCollection($className);
+        $result     = $collection->bulkWrite($operations, $options);
+        if ($class->isVersioned && ! $result->getMatchedCount()) {
+            throw LockException::lockFailed($document);
+        }
+    }
+
+    private function getQueryForDocument(object $document, ClassMetadata $classMetadata) : array
+    {
+        $query = ['_id' => $classMetadata->getDatabaseIdentifierValue($this->uow->getDocumentIdentifier($document))];
+
+        if ($classMetadata->isVersioned) {
+            $query[$classMetadata->fieldMappings[$classMetadata->versionField]['name']] = $classMetadata->reflFields[$classMetadata->versionField]->getValue($document);
+        }
+
+        return $query;
     }
 
     /**
