@@ -13,7 +13,7 @@ use Doctrine\ODM\MongoDB\UnitOfWork;
 use Doctrine\ODM\MongoDB\Utility\CollectionHelper;
 use LogicException;
 use UnexpectedValueException;
-use function array_diff_key;
+use function array_diff;
 use function array_fill_keys;
 use function array_flip;
 use function array_intersect_key;
@@ -324,8 +324,9 @@ final class CollectionPersister
         }
 
         if (! empty($pushAllPaths)) {
-            $this->pushAllCollections(
+            $this->insertCollectionItems(
                 $parent,
+                '$push',
                 $pushAllPaths,
                 $pushAllPathCollMap,
                 $diffsMap,
@@ -336,8 +337,9 @@ final class CollectionPersister
             return;
         }
 
-        $this->addToSetCollections(
+        $this->insertCollectionItems(
             $parent,
+            '$addToSet',
             $addToSetPaths,
             $addToSetPathCollMap,
             $diffsMap,
@@ -346,66 +348,46 @@ final class CollectionPersister
     }
 
     /**
-     * Perform collections update for 'pushAll' strategy.
-     *
      * @param object $parent       Parent object to which passed collections is belong.
+     * @param string $operator     The operator to use (e.g. pushAll, addToSet)
      * @param array  $collsPaths   Paths of collections that is passed.
      * @param array  $pathCollsMap List of collections indexed by their paths.
      * @param array  $diffsMap     List of collection diffs indexed by collections paths.
      * @param array  $options
      */
-    private function pushAllCollections(object $parent, array $collsPaths, array $pathCollsMap, array $diffsMap, array $options) : void
+    private function insertCollectionItems(object $parent, string $operator, array $collsPaths, array $pathCollsMap, array $diffsMap, array $options) : void
     {
-        $pushAllPaths = $this->excludeSubPaths($collsPaths);
-        /** @var PersistentCollectionInterface[] $pushAllColls */
-        $pushAllColls   = array_intersect_key($pathCollsMap, array_flip($pushAllPaths));
-        $pushAllPayload = [];
-        foreach ($pushAllColls as $propertyPath => $coll) {
-            $callback                      = $this->getValuePrepareCallback($coll);
-            $value                         = array_values(array_map($callback, $diffsMap[$propertyPath]));
-            $pushAllPayload[$propertyPath] = ['$each' => $value];
+        $unpushedCollections = $collsPaths;
+        $operations          = [];
+        $classMetadata       = $this->dm->getClassMetadata(get_class($parent));
+        $query               = $this->getQueryForDocument($parent, $classMetadata);
+
+        while (! empty($unpushedCollections)) {
+            $pushableCollections = $this->excludeSubPaths($unpushedCollections);
+            $unpushedCollections = array_diff($unpushedCollections, $pushableCollections);
+
+            $pushAllPayload = [];
+
+            foreach ($pushableCollections as $propertyPath) {
+                $coll                          = $pathCollsMap[$propertyPath];
+                $callback                      = $this->getValuePrepareCallback($coll);
+                $value                         = array_values(array_map($callback, $diffsMap[$propertyPath]));
+                $pushAllPayload[$propertyPath] = ['$each' => $value];
+            }
+
+            $operations[] = [
+                'updateOne' => [
+                    $query,
+                    [$operator => $pushAllPayload],
+                ],
+            ];
         }
 
-        if (! empty($pushAllPayload)) {
-            $this->executeQuery($parent, ['$push' => $pushAllPayload], $options);
-        }
-
-        $pushAllColls = array_diff_key($pathCollsMap, array_flip($pushAllPaths));
-        foreach ($pushAllColls as $propertyPath => $coll) {
-            $callback = $this->getValuePrepareCallback($coll);
-            $value    = array_values(array_map($callback, $diffsMap[$propertyPath]));
-            $query    = ['$push' => [$propertyPath => ['$each' => $value]]];
-            $this->executeQuery($parent, $query, $options);
-        }
-    }
-
-    /**
-     * Perform collections update by 'addToSet' strategy.
-     *
-     * @param object $parent       Parent object to which passed collections is belong.
-     * @param array  $collsPaths   Paths of collections that is passed.
-     * @param array  $pathCollsMap List of collections indexed by their paths.
-     * @param array  $diffsMap     List of collection diffs indexed by collections paths.
-     * @param array  $options
-     */
-    private function addToSetCollections(object $parent, array $collsPaths, array $pathCollsMap, array $diffsMap, array $options) : void
-    {
-        $addToSetPaths = $this->excludeSubPaths($collsPaths);
-        /** @var PersistentCollectionInterface[] $addToSetColls */
-        $addToSetColls = array_intersect_key($pathCollsMap, array_flip($addToSetPaths));
-
-        $addToSetPayload = [];
-        foreach ($addToSetColls as $propertyPath => $coll) {
-            $callback                       = $this->getValuePrepareCallback($coll);
-            $value                          = array_values(array_map($callback, $diffsMap[$propertyPath]));
-            $addToSetPayload[$propertyPath] = ['$each' => $value];
-        }
-
-        if (empty($addToSetPayload)) {
+        if (empty($operations)) {
             return;
         }
 
-        $this->executeQuery($parent, ['$addToSet' => $addToSetPayload], $options);
+        $this->executeBulkWrite($parent, $operations, $options);
     }
 
     /**
