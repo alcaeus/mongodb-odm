@@ -10,8 +10,8 @@ parameters:
         -
             message: "#^Unsafe usage of new static\\(\\)\\.$#"
             paths:
-                 - lib/Doctrine/ODM/MongoDB/Aggregation/Expr.php
-                 - lib/Doctrine/ODM/MongoDB/DocumentManager.php
+                - lib/Doctrine/ODM/MongoDB/Aggregation/Expr.php
+                - lib/Doctrine/ODM/MongoDB/DocumentManager.php
 
         # This cannot be solved the way it is, see https://github.com/vimeo/psalm/issues/5788
         -
