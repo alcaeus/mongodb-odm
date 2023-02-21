@@ -8,6 +8,7 @@ use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\UnitOfWork;
 use Generator;
 use Iterator;
+use MongoDB\BSON\Document;
 use ReturnTypeWillChange;
 use RuntimeException;
 use Traversable;
@@ -85,11 +86,11 @@ final class HydratingIterator implements Iterator
     }
 
     /**
-     * @param array<string, mixed>|null $document
+     * @param array<string, mixed>|Document|null $document
      *
      * @return TDocument|null
      */
-    private function hydrate(?array $document): ?object
+    private function hydrate(array|Document $document): ?object
     {
         return $document !== null ? $this->unitOfWork->getOrCreateDocument($this->class->name, $document, $this->unitOfWorkHints) : null;
     }

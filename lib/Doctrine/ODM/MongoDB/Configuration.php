@@ -8,6 +8,7 @@ use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Cache\Cache;
 use Doctrine\Common\Cache\Psr6\CacheAdapter;
 use Doctrine\Common\Cache\Psr6\DoctrineProvider;
+use Doctrine\ODM\MongoDB\Hydrator\Factory;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadataFactory;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadataFactoryInterface;
 use Doctrine\ODM\MongoDB\Mapping\Driver\AnnotationDriver;
@@ -118,6 +119,8 @@ class Configuration
     private int $autoGenerateProxyClasses = self::AUTOGENERATE_EVAL;
 
     private bool $useTransactionalFlush = false;
+
+    private Factory $hydratorFactory;
 
     public function __construct()
     {
@@ -320,6 +323,16 @@ class Configuration
     public function getHydratorDir(): ?string
     {
         return $this->attributes['hydratorDir'] ?? null;
+    }
+
+    public function setHydratorFactory(Factory $hydratorFactory): void
+    {
+        $this->hydratorFactory = $hydratorFactory;
+    }
+
+    public function getHydratorFactory(): ?Factory
+    {
+        return $this->hydratorFactory ?? null;
     }
 
     /**

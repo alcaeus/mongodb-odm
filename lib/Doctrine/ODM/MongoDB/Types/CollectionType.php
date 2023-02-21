@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Doctrine\ODM\MongoDB\Types;
 
 use Doctrine\ODM\MongoDB\MongoDBException;
+use MongoDB\BSON\PackedArray;
 
 use function array_values;
 use function is_array;
@@ -25,6 +26,10 @@ class CollectionType extends Type
 
     public function convertToPHPValue($value)
     {
+        if ($value instanceof PackedArray) {
+            return $value->toPHP(['document' => 'bson', 'array' => 'bson']);
+        }
+
         return $value !== null ? array_values($value) : null;
     }
 }

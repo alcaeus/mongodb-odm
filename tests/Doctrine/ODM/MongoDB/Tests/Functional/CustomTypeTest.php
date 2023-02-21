@@ -10,6 +10,7 @@ use Doctrine\ODM\MongoDB\Tests\BaseTestCase;
 use Doctrine\ODM\MongoDB\Types\ClosureToPHP;
 use Doctrine\ODM\MongoDB\Types\Type;
 use Exception;
+use MongoDB\BSON\PackedArray;
 
 use function array_map;
 use function array_values;
@@ -76,6 +77,10 @@ class DateCollectionType extends Type
     {
         if ($value === null) {
             return null;
+        }
+
+        if ($value instanceof PackedArray) {
+            $value = $value->toPHP();
         }
 
         if (! is_array($value)) {

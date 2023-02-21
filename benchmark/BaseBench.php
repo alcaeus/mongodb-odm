@@ -9,7 +9,7 @@ use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Mapping\Driver\AttributeDriver;
 use MongoDB\Client;
 use MongoDB\Model\DatabaseInfo;
-use PhpBench\Benchmark\Metadata\Annotations\BeforeMethods;
+use PhpBench\Attributes\BeforeMethods;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 use function array_map;
@@ -17,7 +17,7 @@ use function getenv;
 use function in_array;
 use function iterator_to_array;
 
-/** @BeforeMethods({"initDocumentManager", "clearDatabase"}) */
+#[BeforeMethods(['initDocumentManager', 'clearDatabase'])]
 abstract class BaseBench
 {
     public const DATABASE_NAME           = 'doctrine_odm_performance';
@@ -33,17 +33,7 @@ abstract class BaseBench
 
     public function initDocumentManager(): void
     {
-        $config = new Configuration();
-
-        $config->setProxyDir(__DIR__ . '/../../tests/Proxies');
-        $config->setProxyNamespace('Proxies');
-        $config->setHydratorDir(__DIR__ . '/../../tests/Hydrators');
-        $config->setHydratorNamespace('Hydrators');
-        $config->setPersistentCollectionDir(__DIR__ . '/../../tests/PersistentCollections');
-        $config->setPersistentCollectionNamespace('PersistentCollections');
-        $config->setDefaultDB(self::DATABASE_NAME);
-        $config->setMetadataDriverImpl(self::createMetadataDriverImpl());
-        $config->setMetadataCache(new ArrayAdapter());
+        $config = $this->createDocumentManagerConfiguration();
 
         $client = new Client(
             getenv('DOCTRINE_MONGODB_SERVER') ?: self::DEFAULT_MONGODB_SERVER,
@@ -83,5 +73,22 @@ abstract class BaseBench
     protected static function createMetadataDriverImpl(): AttributeDriver
     {
         return AttributeDriver::create(__DIR__ . '/../tests/Documents');
+    }
+
+    protected function createDocumentManagerConfiguration(): Configuration
+    {
+        $config = new Configuration();
+
+        $config->setProxyDir(__DIR__ . '/../../tests/Proxies');
+        $config->setProxyNamespace('Proxies');
+        $config->setHydratorDir(__DIR__ . '/../../tests/Hydrators');
+        $config->setHydratorNamespace('Hydrators');
+        $config->setPersistentCollectionDir(__DIR__ . '/../../tests/PersistentCollections');
+        $config->setPersistentCollectionNamespace('PersistentCollections');
+        $config->setDefaultDB(self::DATABASE_NAME);
+        $config->setMetadataDriverImpl(self::createMetadataDriverImpl());
+        $config->setMetadataCache(new ArrayAdapter());
+
+        return $config;
     }
 }

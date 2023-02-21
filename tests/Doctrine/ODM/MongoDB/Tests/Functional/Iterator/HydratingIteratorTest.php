@@ -8,6 +8,7 @@ use Doctrine\ODM\MongoDB\Iterator\HydratingIterator;
 use Doctrine\ODM\MongoDB\Tests\BaseTestCase;
 use Documents\User;
 use Generator;
+use MongoDB\BSON\Document;
 use MongoDB\BSON\ObjectId;
 
 use function is_array;
@@ -64,7 +65,7 @@ final class HydratingIteratorTest extends BaseTestCase
         }
 
         foreach ($items as $item) {
-            yield $item;
+            yield Document::fromPHP($item);
         }
     }
 }

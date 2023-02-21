@@ -24,6 +24,7 @@ use Doctrine\Persistence\Mapping\RuntimeReflectionService;
 use Doctrine\Persistence\NotifyPropertyChanged;
 use Doctrine\Persistence\PropertyChangedListener;
 use InvalidArgumentException;
+use MongoDB\BSON\Document;
 use MongoDB\Driver\Exception\RuntimeException;
 use MongoDB\Driver\ReadConcern;
 use MongoDB\Driver\ReadPreference;
@@ -2737,7 +2738,7 @@ final class UnitOfWork implements PropertyChangedListener
      * Creates a document. Used for reconstitution of documents during hydration.
      *
      * @psalm-param class-string<T> $className
-     * @psalm-param array<string, mixed> $data
+     * @psalm-param array<string, mixed>|Document $data
      * @psalm-param T|null $document
      * @psalm-param Hints $hints
      *
@@ -2745,26 +2746,9 @@ final class UnitOfWork implements PropertyChangedListener
      *
      * @template T of object
      */
-    public function getOrCreateDocument(string $className, array $data, array &$hints = [], ?object $document = null): object
+    public function getOrCreateDocument(string $className, array|Document $data, array &$hints = [], ?object $document = null): object
     {
-        $class = $this->dm->getClassMetadata($className);
-
-        // @TODO figure out how to remove this
-        $discriminatorValue = null;
-        if (isset($class->discriminatorField, $data[$class->discriminatorField])) {
-            $discriminatorValue = $data[$class->discriminatorField];
-        } elseif (isset($class->defaultDiscriminatorValue)) {
-            $discriminatorValue = $class->defaultDiscriminatorValue;
-        }
-
-        if ($discriminatorValue !== null) {
-            /** @psalm-var class-string<T> $className */
-            $className =  $class->discriminatorMap[$discriminatorValue] ?? $discriminatorValue;
-
-            $class = $this->dm->getClassMetadata($className);
-
-            unset($data[$class->discriminatorField]);
-        }
+        $class = $this->dm->getDiscriminatedClassMetadata($this->dm->getClassMetadata($className), $data);
 
         if (! empty($hints[Query::HINT_READ_ONLY])) {
             /** @psalm-var T $document */
@@ -2778,7 +2762,7 @@ final class UnitOfWork implements PropertyChangedListener
         $serializedId    = null;
         $id              = null;
         if (! $class->isQueryResultDocument) {
-            $id              = $class->getDatabaseIdentifierValue($data['_id']);
+            $id              = $class->getDatabaseIdentifierValue(ClassMetadata::getDocumentIdentifier($data));
             $serializedId    = serialize($id);
             $isManagedObject = isset($this->identityMap[$class->name][$serializedId]);
         }
@@ -2944,7 +2928,7 @@ final class UnitOfWork implements PropertyChangedListener
      * @param mixed                $id   The identifier values.
      * @param array<string, mixed> $data
      */
-    public function registerManaged(object $document, $id, array $data): void
+    public function registerManaged(object $document, $id, array|Document $data): void
     {
         $oid   = spl_object_hash($document);
         $class = $this->dm->getClassMetadata($document::class);

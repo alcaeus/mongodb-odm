@@ -23,6 +23,7 @@ use Doctrine\Persistence\Mapping\RuntimeReflectionService;
 use Doctrine\Persistence\Reflection\EnumReflectionProperty;
 use InvalidArgumentException;
 use LogicException;
+use MongoDB\BSON\Document;
 use ProxyManager\Proxy\GhostObjectInterface;
 use ReflectionClass;
 use ReflectionEnum;
@@ -840,7 +841,32 @@ use function trigger_deprecation;
      */
     public static function getReferenceId($reference, string $storeAs)
     {
-        return $storeAs === self::REFERENCE_STORE_AS_ID ? $reference : $reference[self::getReferencePrefix($storeAs) . 'id'];
+        if ($storeAs === self::REFERENCE_STORE_AS_ID) {
+            return $reference;
+        }
+
+        if (! is_array($reference) && ! $reference instanceof Document) {
+            // TODO: Clean this up
+            throw new InvalidArgumentException('Invalid reference type');
+        }
+
+        $identifierField = self::getReferencePrefix($storeAs) . 'id';
+
+        return $reference instanceof Document ? $reference->get($identifierField) : $reference[$identifierField];
+    }
+
+    /**
+     * Helper method to get reference id of ref* type references
+     *
+     * @internal
+     *
+     * @param mixed $reference
+     *
+     * @return mixed
+     */
+    public static function getDocumentIdentifier(array|Document $documentData)
+    {
+        return $documentData instanceof Document ? $documentData->get('_id') : $documentData['_id'];
     }
 
     /**

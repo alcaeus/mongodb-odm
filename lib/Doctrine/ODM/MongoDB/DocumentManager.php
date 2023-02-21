@@ -6,10 +6,10 @@ namespace Doctrine\ODM\MongoDB;
 
 use Doctrine\Common\EventManager;
 use Doctrine\ODM\MongoDB\Hydrator\Factory;
-use Doctrine\ODM\MongoDB\Hydrator\Factory\ArrayHydratorFactory;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadataFactoryInterface;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
+use Doctrine\ODM\MongoDB\PersistentCollection\DefaultPersistentCollectionFactory;
 use Doctrine\ODM\MongoDB\Proxy\Factory\ProxyFactory;
 use Doctrine\ODM\MongoDB\Proxy\Factory\StaticProxyFactory;
 use Doctrine\ODM\MongoDB\Proxy\Resolver\CachingClassNameResolver;
@@ -24,6 +24,7 @@ use Doctrine\Persistence\Mapping\ProxyClassNameResolver;
 use Doctrine\Persistence\ObjectManager;
 use InvalidArgumentException;
 use Jean85\PrettyVersions;
+use MongoDB\BSON\Document;
 use MongoDB\Client;
 use MongoDB\Collection;
 use MongoDB\Database;
@@ -36,6 +37,7 @@ use Throwable;
 use function array_search;
 use function assert;
 use function gettype;
+use function is_array;
 use function is_object;
 use function ltrim;
 use function sprintf;
@@ -170,15 +172,19 @@ class DocumentManager implements ObjectManager
             $this->metadataFactory->setCache($cacheDriver);
         }
 
+        $this->hydratorFactory = new Factory\BSONHydratorFactory(
+            $this,
+            new DefaultPersistentCollectionFactory(),
+        );
         $hydratorDir           = $this->config->getHydratorDir();
         $hydratorNs            = $this->config->getHydratorNamespace();
-        $this->hydratorFactory = new ArrayHydratorFactory(
-            $this,
-            $this->eventManager,
-            $hydratorDir,
-            $hydratorNs,
-            $this->config->getAutoGenerateHydratorClasses(),
-        );
+//        $this->hydratorFactory = new ArrayHydratorFactory(
+//            $this,
+//            $this->eventManager,
+//            $hydratorDir,
+//            $hydratorNs,
+//            $this->config->getAutoGenerateHydratorClasses(),
+//        );
 
         $this->unitOfWork        = new UnitOfWork($this, $this->eventManager, $this->hydratorFactory);
         $this->schemaManager     = new SchemaManager($this, $this->metadataFactory);
@@ -890,8 +896,8 @@ class DocumentManager implements ObjectManager
      *
      * @internal
      *
-     * @param FieldMapping              $mapping
-     * @param array<string, mixed>|null $data
+     * @param FieldMapping                       $mapping
+     * @param array<string, mixed>|Document|null $data
      *
      * @psalm-return class-string
      */
@@ -899,31 +905,71 @@ class DocumentManager implements ObjectManager
     {
         $discriminatorField = $mapping['discriminatorField'] ?? null;
 
-        $discriminatorValue = null;
-        if (isset($discriminatorField, $data[$discriminatorField])) {
-            $discriminatorValue = $data[$discriminatorField];
-        } elseif (isset($mapping['defaultDiscriminatorValue'])) {
-            $discriminatorValue = $mapping['defaultDiscriminatorValue'];
-        }
+        if ($discriminatorField) {
+            $discriminatorValue = $this->getDiscriminatorValue($discriminatorField, $data, $mapping['defaultDiscriminatorValue'] ?? null);
 
-        if ($discriminatorValue !== null) {
-            return $mapping['discriminatorMap'][$discriminatorValue]
-                ?? (string) $discriminatorValue;
+            if ($discriminatorValue !== null) {
+                return $mapping['discriminatorMap'][$discriminatorValue]
+                    ?? (string) $discriminatorValue;
+            }
         }
 
         $class = $this->getClassMetadata($mapping['targetDocument']);
 
-        if (isset($class->discriminatorField, $data[$class->discriminatorField])) {
-            $discriminatorValue = $data[$class->discriminatorField];
-        } elseif ($class->defaultDiscriminatorValue !== null) {
-            $discriminatorValue = $class->defaultDiscriminatorValue;
-        }
+        if (isset($class->discriminatorField)) {
+            $discriminatorValue = $this->getDiscriminatorValue($class->discriminatorField, $data, $class->defaultDiscriminatorValue ?? null);
 
-        if ($discriminatorValue !== null) {
-            return $class->discriminatorMap[$discriminatorValue] ?? $discriminatorValue;
+            if ($discriminatorValue !== null) {
+                return $class->discriminatorMap[$discriminatorValue] ?? $discriminatorValue;
+            }
         }
 
         return $mapping['targetDocument'];
+    }
+
+    /**
+     * Gets the class name for an association (embed or reference) with respect
+     * to any discriminator value.
+     *
+     * @internal
+     *
+     * @param ClassMetadata                      $mapping
+     * @param array<string, mixed>|Document|null $data
+     */
+    public function getDiscriminatedClassMetadata(ClassMetadata $class, $data): ClassMetadata
+    {
+        if (! $class->discriminatorField) {
+            return $class;
+        }
+
+        $discriminatorValue = $this->getDiscriminatorValue($class->discriminatorField, $data, $class->defaultDiscriminatorValue ?? null);
+
+        if ($discriminatorValue !== null) {
+            if (isset($class->discriminatorMap[$discriminatorValue])) {
+                return $this->getClassMetadata($class->discriminatorMap[$discriminatorValue]);
+            }
+
+            return $this->getClassMetadata($discriminatorValue);
+        }
+
+        return $class;
+    }
+
+    private function getDiscriminatorValue(string $discriminatorField, mixed $data, mixed $fallback = null): mixed
+    {
+        if (is_array($data)) {
+            return $data[$discriminatorField] ?? $fallback;
+        }
+
+        if ($data instanceof Document) {
+            return $data->has($discriminatorField) ? $data->get($discriminatorField) : $fallback;
+        }
+
+        if (is_object($data)) {
+            return $data->$discriminatorField ?? $fallback;
+        }
+
+        return $fallback;
     }
 
     private static function getVersion(): string

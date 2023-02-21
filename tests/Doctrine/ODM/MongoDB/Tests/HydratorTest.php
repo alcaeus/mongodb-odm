@@ -7,24 +7,29 @@ namespace Doctrine\ODM\MongoDB\Tests;
 use DateTime;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ODM\MongoDB\Hydrator\HydratorException;
+use Doctrine\ODM\MongoDB\Hydrator\HydratorInterface;
+use Doctrine\ODM\MongoDB\Hydrator\TypeMapHydrator;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 use Doctrine\ODM\MongoDB\PersistentCollection;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionInterface;
 use Doctrine\ODM\MongoDB\Query\Query;
+use MongoDB\BSON\Document;
+use MongoDB\BSON\PackedArray;
+use MongoDB\BSON\UTCDateTime;
 use ProxyManager\Proxy\GhostObjectInterface;
 
 class HydratorTest extends BaseTestCase
 {
     public function testHydrator(): void
     {
-        $class = $this->dm->getClassMetadata(HydrationClosureUser::class);
+        $user     = new HydrationClosureUser();
+        $hydrator = $this->dm->getHydratorFactory()->getHydratorFor($user::class);
 
-        $user = new HydrationClosureUser();
-        $this->dm->getHydratorFactory()->hydrate($user, [
+        $hydrator->hydrate($user, $this->getHydrationData([
             '_id' => 1,
             'title' => null,
             'name' => 'jon',
-            'birthdate' => new DateTime('1961-01-01'),
+            'birthdate' => new UTCDateTime(new DateTime('1961-01-01')),
             'referenceOne' => ['$id' => '1'],
             'referenceMany' => [
                 ['$id' => '1'],
@@ -34,7 +39,7 @@ class HydratorTest extends BaseTestCase
             'embedMany' => [
                 ['name' => 'jon'],
             ],
-        ]);
+        ], $hydrator));
 
         self::assertEquals(1, $user->id);
         self::assertNull($user->title);
@@ -56,11 +61,13 @@ class HydratorTest extends BaseTestCase
         $user = $this->dm->getReference(HydrationClosureUser::class, 1);
         self::assertInstanceOf(GhostObjectInterface::class, $user);
 
-        $this->dm->getHydratorFactory()->hydrate($user, [
+        $hydrator = $this->dm->getHydratorFactory()->getHydratorFor(HydrationClosureUser::class);
+
+        $hydrator->hydrate($user, $this->getHydrationData([
             '_id' => 1,
             'title' => null,
             'name' => 'jon',
-        ]);
+        ], $hydrator));
 
         self::assertEquals(1, $user->id);
         self::assertNull($user->title);
@@ -74,18 +81,18 @@ class HydratorTest extends BaseTestCase
 
     public function testReadOnly(): void
     {
-        $class = $this->dm->getClassMetadata(HydrationClosureUser::class);
+        $user     = new HydrationClosureUser();
+        $hydrator = $this->dm->getHydratorFactory()->getHydratorFor($user::class);
 
-        $user = new HydrationClosureUser();
-        $this->dm->getHydratorFactory()->hydrate($user, [
+        $hydrator->hydrate($user, $this->getHydrationData([
             '_id' => 1,
             'name' => 'maciej',
-            'birthdate' => new DateTime('1961-01-01'),
+            'birthdate' => new UTCDateTime(new DateTime('1961-01-01')),
             'embedOne' => ['name' => 'maciej'],
             'embedMany' => [
                 ['name' => 'maciej'],
             ],
-        ], [Query::HINT_READ_ONLY => true]);
+        ], $hydrator), [Query::HINT_READ_ONLY => true]);
 
         self::assertFalse($this->uow->isInIdentityMap($user));
         self::assertFalse($this->uow->isInIdentityMap($user->embedOne));
@@ -94,88 +101,97 @@ class HydratorTest extends BaseTestCase
 
     public function testEmbedOneWithWrongType(): void
     {
-        $user = new HydrationClosureUser();
+        $user     = new HydrationClosureUser();
+        $hydrator = $this->dm->getHydratorFactory()->getHydratorFor($user::class);
 
-        $this->expectException(HydratorException::class);
-        $this->expectExceptionMessage('Expected association for field "embedOne" in document of type "' . HydrationClosureUser::class . '" to be of type "array", "string" received.');
+        $this->expectExceptionObject(HydratorException::associationTypeMismatch(HydrationClosureUser::class, 'embedOne', Document::class, 'string'));
 
-        $this->dm->getHydratorFactory()->hydrate($user, [
+        $hydrator->hydrate($user, $this->getHydrationData([
             '_id' => 1,
             'embedOne' => 'jon',
-        ]);
+        ], $hydrator));
     }
 
     public function testEmbedManyWithWrongType(): void
     {
-        $user = new HydrationClosureUser();
+        $user     = new HydrationClosureUser();
+        $hydrator = $this->dm->getHydratorFactory()->getHydratorFor($user::class);
 
-        $this->expectException(HydratorException::class);
-        $this->expectExceptionMessage('Expected association for field "embedMany" in document of type "' . HydrationClosureUser::class . '" to be of type "array", "string" received.');
+        $this->expectExceptionObject(HydratorException::associationTypeMismatch(HydrationClosureUser::class, 'embedMany', PackedArray::class . ' or ' . Document::class, 'string'));
 
-        $this->dm->getHydratorFactory()->hydrate($user, [
+        $hydrator->hydrate($user, $this->getHydrationData([
             '_id' => 1,
             'embedMany' => 'jon',
-        ]);
+        ], $hydrator));
     }
 
     public function testEmbedManyWithWrongElementType(): void
     {
-        $user = new HydrationClosureUser();
+        $user     = new HydrationClosureUser();
+        $hydrator = $this->dm->getHydratorFactory()->getHydratorFor($user::class);
 
-        $this->dm->getHydratorFactory()->hydrate($user, [
+        $hydrator->hydrate($user, $this->getHydrationData([
             '_id' => 1,
             'embedMany' => ['jon'],
-        ]);
+        ], $hydrator));
 
         self::assertInstanceOf(PersistentCollectionInterface::class, $user->embedMany);
 
-        $this->expectException(HydratorException::class);
-        $this->expectExceptionMessage('Expected association item with key "0" for field "embedMany" in document of type "' . HydrationClosureUser::class . '" to be of type "array", "string" received.');
+        $this->expectExceptionObject(HydratorException::associationItemTypeMismatch(HydrationClosureUser::class, 'embedMany', 0, 'array or object', 'string'));
 
         $user->embedMany->initialize();
     }
 
     public function testReferenceOneWithWrongType(): void
     {
-        $user = new HydrationClosureUser();
+        $user     = new HydrationClosureUser();
+        $hydrator = $this->dm->getHydratorFactory()->getHydratorFor($user::class);
 
-        $this->expectException(HydratorException::class);
-        $this->expectExceptionMessage('Expected association for field "referenceOne" in document of type "' . HydrationClosureUser::class . '" to be of type "array", "string" received.');
+        $this->expectExceptionObject(HydratorException::associationTypeMismatch(HydrationClosureUser::class, 'referenceOne', Document::class, 'string'));
 
-        $this->dm->getHydratorFactory()->hydrate($user, [
+        $hydrator->hydrate($user, $this->getHydrationData([
             '_id' => 1,
             'referenceOne' => 'jon',
-        ]);
+        ], $hydrator));
     }
 
     public function testReferenceManyWithWrongType(): void
     {
-        $user = new HydrationClosureUser();
+        $user     = new HydrationClosureUser();
+        $hydrator = $this->dm->getHydratorFactory()->getHydratorFor($user::class);
 
-        $this->expectException(HydratorException::class);
-        $this->expectExceptionMessage('Expected association for field "referenceMany" in document of type "' . HydrationClosureUser::class . '" to be of type "array", "string" received.');
+        $this->expectExceptionObject(HydratorException::associationTypeMismatch(HydrationClosureUser::class, 'referenceMany', PackedArray::class . ' or ' . Document::class, 'string'));
 
-        $this->dm->getHydratorFactory()->hydrate($user, [
+        $hydrator->hydrate($user, $this->getHydrationData([
             '_id' => 1,
             'referenceMany' => 'jon',
-        ]);
+        ], $hydrator));
     }
 
     public function testReferenceManyWithWrongElementType(): void
     {
-        $user = new HydrationClosureUser();
+        $user     = new HydrationClosureUser();
+        $hydrator = $this->dm->getHydratorFactory()->getHydratorFor($user::class);
 
-        $this->dm->getHydratorFactory()->hydrate($user, [
+        $hydrator->hydrate($user, $this->getHydrationData([
             '_id' => 1,
             'referenceMany' => ['jon'],
-        ]);
+        ], $hydrator));
 
         self::assertInstanceOf(PersistentCollectionInterface::class, $user->referenceMany);
 
-        $this->expectException(HydratorException::class);
-        $this->expectExceptionMessage('Expected association item with key "0" for field "referenceMany" in document of type "' . HydrationClosureUser::class . '" to be of type "array", "string" received.');
+        $this->expectExceptionObject(HydratorException::associationItemTypeMismatch(HydrationClosureUser::class, 'referenceMany', 0, 'array or object', 'string'));
 
         $user->referenceMany->initialize();
+    }
+
+    private function getHydrationData(array $data, HydratorInterface $hydrator): mixed
+    {
+        if ($hydrator instanceof TypeMapHydrator) {
+            return Document::fromPHP($data)->toPHP($hydrator->getTypeMap());
+        }
+
+        return $data;
     }
 }
 

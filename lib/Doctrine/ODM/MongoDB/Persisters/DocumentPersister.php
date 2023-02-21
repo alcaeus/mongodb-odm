@@ -31,6 +31,7 @@ use Doctrine\ODM\MongoDB\Utility\CollectionHelper;
 use Doctrine\Persistence\Mapping\MappingException;
 use InvalidArgumentException;
 use Iterator as SplIterator;
+use MongoDB\BSON\Document;
 use MongoDB\BSON\ObjectId;
 use MongoDB\Collection;
 use MongoDB\Driver\CursorInterface;
@@ -54,8 +55,8 @@ use function array_values;
 use function assert;
 use function count;
 use function explode;
+use function get_debug_type;
 use function get_object_vars;
-use function gettype;
 use function implode;
 use function in_array;
 use function is_array;
@@ -636,20 +637,20 @@ final class DocumentPersister
     /**
      * Creates or fills a single document object from an query result.
      *
-     * @param array<string, mixed> $result   The query result.
-     * @param object|null          $document The document object to fill, if any.
-     * @param array                $hints    Hints for document creation.
+     * @param array<string, mixed>|Document $result   The query result.
+     * @param object|null                   $document The document object to fill, if any.
+     * @param array                         $hints    Hints for document creation.
      * @psalm-param Hints $hints
      * @psalm-param T|null $document
      *
      * @return object The filled and managed document object.
      * @psalm-return T
      */
-    private function createDocument(array $result, ?object $document = null, array $hints = []): object
+    private function createDocument(array|Document $result, ?object $document = null, array $hints = []): object
     {
         if ($document !== null) {
             $hints[Query::HINT_REFRESH] = true;
-            $id                         = $this->class->getPHPIdentifierValue($result['_id']);
+            $id                         = $this->class->getPHPIdentifierValue(ClassMetadata::getDocumentIdentifier($result));
             $this->uow->registerManaged($document, $id, $result);
         }
 
@@ -701,11 +702,11 @@ final class DocumentPersister
             $embeddedMetadata       = $this->dm->getClassMetadata($className);
             $embeddedDocumentObject = $embeddedMetadata->newInstance();
 
-            if (! is_array($embeddedDocument)) {
-                throw HydratorException::associationItemTypeMismatch($owner::class, $mapping['name'], $key, 'array', gettype($embeddedDocument));
-            }
-
             $this->uow->setParentAssociation($embeddedDocumentObject, $mapping, $owner, $mapping['name'] . '.' . $key);
+
+            if (! is_array($embeddedDocument) && ! $embeddedDocument instanceof Document) {
+                throw HydratorException::associationItemTypeMismatch($owner::class, $mapping['name'], $key, 'array or object', get_debug_type($embeddedDocument));
+            }
 
             $data = $this->hydratorFactory->hydrate($embeddedDocumentObject, $embeddedDocument, $collection->getHints());
             $id   = $data[$embeddedMetadata->identifier] ?? null;
@@ -738,12 +739,13 @@ final class DocumentPersister
         foreach ($collection->getMongoData() as $key => $reference) {
             $className = $this->dm->getClassNameForAssociation($mapping, $reference);
 
-            if ($mapping['storeAs'] !== ClassMetadata::REFERENCE_STORE_AS_ID && ! is_array($reference)) {
-                throw HydratorException::associationItemTypeMismatch($owner::class, $mapping['name'], $key, 'array', gettype($reference));
+            try {
+                $identifier = ClassMetadata::getReferenceId($reference, $mapping['storeAs']);
+            } catch (InvalidArgumentException) {
+                throw HydratorException::associationItemTypeMismatch($owner::class, $mapping['name'], $key, 'array or object', get_debug_type($reference));
             }
 
-            $identifier = ClassMetadata::getReferenceId($reference, $mapping['storeAs']);
-            $id         = $this->dm->getClassMetadata($className)->getPHPIdentifierValue($identifier);
+            $id = $this->dm->getClassMetadata($className)->getPHPIdentifierValue($identifier);
 
             // create a reference to the class and id
             $reference = $this->dm->getReference($className, $id);
@@ -792,10 +794,15 @@ final class DocumentPersister
                 $options['readPreference'] = $hints[Query::HINT_READ_PREFERENCE];
             }
 
+            if ($this->hydratorFactory instanceof TypeMapHydrator) {
+                $options = $this->hydratorFactory->prepareReadOptions($options);
+            }
+
             $cursor    = $mongoCollection->find($criteria, $options);
             $documents = $cursor->toArray();
             foreach ($documents as $documentData) {
-                $document = $this->uow->getById($documentData['_id'], $class);
+                $databaseId = ClassMetadata::getDocumentIdentifier($documentData);
+                $document   = $this->uow->getById($databaseId, $class);
                 if ($this->uow->isUninitializedObject($document)) {
                     $data = $this->hydratorFactory->hydrate($document, $documentData);
                     $this->uow->setOriginalDocumentData($document, $data);

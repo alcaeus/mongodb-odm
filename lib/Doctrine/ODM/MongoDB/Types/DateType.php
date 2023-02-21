@@ -13,7 +13,7 @@ use Throwable;
 
 use function abs;
 use function date_default_timezone_get;
-use function gettype;
+use function get_debug_type;
 use function is_numeric;
 use function is_scalar;
 use function is_string;
@@ -64,7 +64,7 @@ class DateType extends Type implements Versionable
         }
 
         if ($datetime === false) {
-            throw new InvalidArgumentException(sprintf('Could not convert %s to a date value', is_scalar($value) ? '"' . $value . '"' : gettype($value)), 0, $exception);
+            throw new InvalidArgumentException(sprintf('Could not convert %s to a date value', is_scalar($value) ? '"' . $value . '"' : get_debug_type($value)), 0, $exception);
         }
 
         return $datetime;

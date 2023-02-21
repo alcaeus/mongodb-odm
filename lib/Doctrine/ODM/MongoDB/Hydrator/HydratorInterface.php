@@ -16,10 +16,9 @@ interface HydratorInterface
     /**
      * Hydrate array of MongoDB document data into the given document object.
      *
-     * @param array<string, mixed> $data
      * @psalm-param Hints $hints
      *
      * @return array<string, mixed>
      */
-    public function hydrate(object $document, array $data, array $hints = []): array;
+    public function hydrate(object $document, null $data, array $hints = []): array;
 }

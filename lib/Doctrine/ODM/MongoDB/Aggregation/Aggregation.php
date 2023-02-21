@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Doctrine\ODM\MongoDB\Aggregation;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Doctrine\ODM\MongoDB\Hydrator\TypeMapHydrator;
 use Doctrine\ODM\MongoDB\Iterator\CachingIterator;
 use Doctrine\ODM\MongoDB\Iterator\HydratingIterator;
 use Doctrine\ODM\MongoDB\Iterator\Iterator;
@@ -34,6 +35,10 @@ final class Aggregation implements IteratorAggregate
     {
         // Force cursor to be used
         $options = array_merge($this->options, ['cursor' => true]);
+
+        if ($this->classMetadata && $this->dm->getHydratorFactory() instanceof TypeMapHydrator) {
+            $options = $this->dm->getHydratorFactory()->prepareReadOptions($options);
+        }
 
         $cursor = $this->collection->aggregate($this->pipeline, $options);
         // This assertion can be dropped when requiring mongodb/mongodb 1.17.0

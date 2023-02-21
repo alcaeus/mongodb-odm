@@ -7,6 +7,7 @@ namespace Doctrine\ODM\MongoDB\Query;
 use BadMethodCallException;
 use Doctrine\ODM\MongoDB\Aggregation\Stage\Sort;
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Doctrine\ODM\MongoDB\Hydrator\TypeMapHydrator;
 use Doctrine\ODM\MongoDB\Iterator\CachingIterator;
 use Doctrine\ODM\MongoDB\Iterator\HydratingIterator;
 use Doctrine\ODM\MongoDB\Iterator\Iterator;
@@ -451,7 +452,7 @@ final class Query implements IteratorAggregate
 
                 $cursor = $this->collection->find(
                     $this->query['query'],
-                    array_merge($options, $queryOptions),
+                    $this->prepareReadOptions(array_merge($options, $queryOptions)),
                 );
 
                 return $this->makeIterator($cursor);
@@ -466,7 +467,7 @@ final class Query implements IteratorAggregate
                 return $this->collection->{$operation}(
                     $this->query['query'],
                     $this->query['newObj'],
-                    array_merge($options, $queryOptions)
+                    $this->prepareReadOptions(array_merge($options, $queryOptions)),
                 );
 
             case self::TYPE_FIND_AND_REMOVE:
@@ -540,5 +541,14 @@ final class Query implements IteratorAggregate
         $firstKey = array_key_first($this->query['newObj']);
 
         return is_string($firstKey) && $firstKey[0] === '$';
+    }
+
+    private function prepareReadOptions(array $readOptions): array
+    {
+        if ($this->hydrate && $this->dm->getHydratorFactory() instanceof TypeMapHydrator) {
+            return $this->dm->getHydratorFactory()->prepareReadOptions($readOptions);
+        }
+
+        return $readOptions;
     }
 }
