@@ -9,7 +9,7 @@ use BadMethodCallException;
 use Doctrine\ODM\MongoDB\Aggregation\Stage\Sort;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Hydrator\HydratorException;
-use Doctrine\ODM\MongoDB\Hydrator\HydratorFactory;
+use Doctrine\ODM\MongoDB\Hydrator\HydratorFactoryInterface;
 use Doctrine\ODM\MongoDB\Iterator\CachingIterator;
 use Doctrine\ODM\MongoDB\Iterator\HydratingIterator;
 use Doctrine\ODM\MongoDB\Iterator\Iterator;
@@ -108,7 +108,7 @@ final class DocumentPersister
         private PersistenceBuilder $pb,
         private DocumentManager $dm,
         private UnitOfWork $uow,
-        private HydratorFactory $hydratorFactory,
+        private HydratorFactoryInterface $hydratorFactory,
         private ClassMetadata $class,
         ?CriteriaMerger $cm = null,
     ) {
