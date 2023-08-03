@@ -8,6 +8,7 @@ use Doctrine\Common\EventManager;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\UnitOfWork;
+use MongoDB\BSON\Document;
 
 /**
  * The HydratorFactory class is responsible for instantiating a correct hydrator
@@ -32,7 +33,7 @@ final class HydratorFactory implements HydratorFactoryInterface
      */
     public function setUnitOfWork(UnitOfWork $uow): void
     {
-        $this->unitOfWork = $uow;
+        $this->legacyHydratorFactory->setUnitOfWork($uow);
     }
 
     /**
@@ -61,13 +62,17 @@ final class HydratorFactory implements HydratorFactoryInterface
     /**
      * Hydrate array of MongoDB document data into the given document object.
      *
-     * @param array<string, mixed> $data
+     * @param array<string, mixed>|Document $data
      * @psalm-param Hints $hints Any hints to account for during reconstitution/lookup of the document.
      *
      * @return array<string, mixed>
      */
-    public function hydrate(object $document, array $data, array $hints = []): array
+    public function hydrate(object $document, $data, array $hints = []): array
     {
+        if ($data instanceof Document) {
+            $data = $data->toPHP(DocumentManager::CLIENT_TYPEMAP);
+        }
+
         return $this->legacyHydratorFactory->hydrate($document, $data, $hints);
     }
 }

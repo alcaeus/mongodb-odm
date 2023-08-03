@@ -6,6 +6,7 @@ namespace Doctrine\ODM\MongoDB\Hydrator;
 
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\UnitOfWork;
+use MongoDB\BSON\Document;
 
 /**
  * The HydratorFactory class is responsible for instantiating a correct hydrator
@@ -35,10 +36,12 @@ interface HydratorFactoryInterface
     /**
      * Hydrate array of MongoDB document data into the given document object.
      *
-     * @param array<string, mixed> $data
+     * @param array<string, mixed>|Document $data
      * @psalm-param Hints $hints Any hints to account for during reconstitution/lookup of the document.
      *
      * @return array<string, mixed>
      */
-    public function hydrate(object $document, array $data, array $hints = []): array;
+    public function hydrate(object $document, $data, array $hints = []): array;
+
+    public function setUnitOfWork(UnitOfWork $uow): void;
 }

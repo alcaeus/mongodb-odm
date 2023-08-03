@@ -347,7 +347,7 @@ class DocumentManager implements ObjectManager
         if (! isset($this->documentCollections[$className])) {
             $db = $this->getDocumentDatabase($className);
 
-            $options = ['typeMap' => self::CLIENT_TYPEMAP];
+            $options = ['typeMap' => ['root' => 'bson']];
             if ($metadata->readPreference !== null) {
                 $options['readPreference'] = new ReadPreference($metadata->readPreference, $metadata->readPreferenceTags);
             }

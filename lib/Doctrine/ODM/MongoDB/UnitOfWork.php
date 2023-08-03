@@ -25,6 +25,7 @@ use Doctrine\Persistence\Mapping\RuntimeReflectionService;
 use Doctrine\Persistence\NotifyPropertyChanged;
 use Doctrine\Persistence\PropertyChangedListener;
 use InvalidArgumentException;
+use MongoDB\BSON\Document;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Driver\WriteConcern;
 use ProxyManager\Proxy\GhostObjectInterface;
@@ -2757,7 +2758,7 @@ final class UnitOfWork implements PropertyChangedListener
      * Creates a document. Used for reconstitution of documents during hydration.
      *
      * @psalm-param class-string<T> $className
-     * @psalm-param array<string, mixed> $data
+     * @psalm-param array<string, mixed>|Document $data
      * @psalm-param T|null $document
      * @psalm-param Hints $hints
      *
@@ -2765,7 +2766,7 @@ final class UnitOfWork implements PropertyChangedListener
      *
      * @template T of object
      */
-    public function getOrCreateDocument(string $className, array $data, array &$hints = [], ?object $document = null): object
+    public function getOrCreateDocument(string $className, $data, array &$hints = [], ?object $document = null): object
     {
         $class = $this->dm->getClassMetadata($className);
 
