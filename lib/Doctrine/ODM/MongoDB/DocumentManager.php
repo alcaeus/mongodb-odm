@@ -54,6 +54,7 @@ use function trigger_deprecation;
 class DocumentManager implements ObjectManager
 {
     public const CLIENT_TYPEMAP = ['root' => 'array', 'document' => 'array'];
+    public const BSON_TYPEMAP = ['root' => 'bson'];
 
     /**
      * The Doctrine MongoDB connection instance.
@@ -345,7 +346,7 @@ class DocumentManager implements ObjectManager
         if (! isset($this->documentCollections[$className])) {
             $db = $this->getDocumentDatabase($className);
 
-            $options = ['typeMap' => self::CLIENT_TYPEMAP];
+            $options = ['typeMap' => self::BSON_TYPEMAP];
             if ($metadata->readPreference !== null) {
                 $options['readPreference'] = new ReadPreference($metadata->readPreference, $metadata->readPreferenceTags);
             }

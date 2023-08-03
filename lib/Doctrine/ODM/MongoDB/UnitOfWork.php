@@ -24,6 +24,7 @@ use Doctrine\Persistence\Mapping\RuntimeReflectionService;
 use Doctrine\Persistence\NotifyPropertyChanged;
 use Doctrine\Persistence\PropertyChangedListener;
 use InvalidArgumentException;
+use MongoDB\BSON\Document;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Driver\WriteConcern;
 use ProxyManager\Proxy\GhostObjectInterface;
@@ -2756,7 +2757,7 @@ final class UnitOfWork implements PropertyChangedListener
      * Creates a document. Used for reconstitution of documents during hydration.
      *
      * @psalm-param class-string<T> $className
-     * @psalm-param array<string, mixed> $data
+     * @psalm-param array<string, mixed>|Document $data
      * @psalm-param T|null $document
      * @psalm-param Hints $hints
      *
@@ -2764,25 +2765,33 @@ final class UnitOfWork implements PropertyChangedListener
      *
      * @template T of object
      */
-    public function getOrCreateDocument(string $className, array $data, array &$hints = [], ?object $document = null): object
+    public function getOrCreateDocument(string $className, $data, array &$hints = [], ?object $document = null): object
     {
         $class = $this->dm->getClassMetadata($className);
 
         // @TODO figure out how to remove this
         $discriminatorValue = null;
-        if (isset($class->discriminatorField, $data[$class->discriminatorField])) {
-            $discriminatorValue = $data[$class->discriminatorField];
-        } elseif (isset($class->defaultDiscriminatorValue)) {
-            $discriminatorValue = $class->defaultDiscriminatorValue;
+
+        if ($data instanceof Document) {
+            if (isset($class->discriminatorField) && $data->has($class->discriminatorField)) {
+                $discriminatorValue = $data->get($class->discriminatorField);
+            } elseif (isset($class->defaultDiscriminatorValue)) {
+                $discriminatorValue = $class->defaultDiscriminatorValue;
+            }
+        } else {
+            if (isset($class->discriminatorField, $data[$class->discriminatorField])) {
+                $discriminatorValue = $data[$class->discriminatorField];
+            } elseif (isset($class->defaultDiscriminatorValue)) {
+                $discriminatorValue = $class->defaultDiscriminatorValue;
+            }
         }
+
 
         if ($discriminatorValue !== null) {
             /** @psalm-var class-string<T> $className */
             $className =  $class->discriminatorMap[$discriminatorValue] ?? $discriminatorValue;
 
             $class = $this->dm->getClassMetadata($className);
-
-            unset($data[$class->discriminatorField]);
         }
 
         if (! empty($hints[Query::HINT_READ_ONLY])) {

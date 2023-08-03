@@ -13,6 +13,7 @@ use Doctrine\ODM\MongoDB\Events;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Types\Type;
 use Doctrine\ODM\MongoDB\UnitOfWork;
+use MongoDB\BSON\Document;
 use ProxyManager\Proxy\GhostObjectInterface;
 
 use function array_key_exists;
@@ -423,13 +424,17 @@ EOF
     /**
      * Hydrate array of MongoDB document data into the given document object.
      *
-     * @param array<string, mixed> $data
+     * @param array<string, mixed>|Document $data
      * @psalm-param Hints $hints Any hints to account for during reconstitution/lookup of the document.
      *
      * @return array<string, mixed>
      */
-    public function hydrate(object $document, array $data, array $hints = []): array
+    public function hydrate(object $document, $data, array $hints = []): array
     {
+        if ($data instanceof Document) {
+            $data = $data->toPHP(['root' => 'array', 'document' => 'bson', 'array' => 'array']);
+        }
+
         $metadata = $this->dm->getClassMetadata($document::class);
         // Invoke preLoad lifecycle events and listeners
         if (! empty($metadata->lifecycleCallbacks[Events::preLoad])) {
