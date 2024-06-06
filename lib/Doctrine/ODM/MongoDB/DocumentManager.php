@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Doctrine\ODM\MongoDB;
 
 use Doctrine\Common\EventManager;
-use Doctrine\ODM\MongoDB\Hydrator\HydratorFactory;
+use Doctrine\ODM\MongoDB\Hydrator\Factory;
+use Doctrine\ODM\MongoDB\Hydrator\Factory\ArrayHydratorFactory;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadataFactoryInterface;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
@@ -84,7 +85,7 @@ class DocumentManager implements ObjectManager
     /**
      * The Hydrator factory instance.
      */
-    private HydratorFactory $hydratorFactory;
+    private Factory $hydratorFactory;
 
     /**
      * The Proxy factory instance.
@@ -171,7 +172,7 @@ class DocumentManager implements ObjectManager
 
         $hydratorDir           = $this->config->getHydratorDir();
         $hydratorNs            = $this->config->getHydratorNamespace();
-        $this->hydratorFactory = new HydratorFactory(
+        $this->hydratorFactory = new ArrayHydratorFactory(
             $this,
             $this->eventManager,
             $hydratorDir,
@@ -260,7 +261,7 @@ class DocumentManager implements ObjectManager
      * Gets the Hydrator factory used by the DocumentManager to generate and get hydrators
      * for each type of document.
      */
-    public function getHydratorFactory(): HydratorFactory
+    public function getHydratorFactory(): Factory
     {
         return $this->hydratorFactory;
     }

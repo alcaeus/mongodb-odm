@@ -7,7 +7,7 @@ namespace Doctrine\ODM\MongoDB;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\EventManager;
-use Doctrine\ODM\MongoDB\Hydrator\HydratorFactory;
+use Doctrine\ODM\MongoDB\Hydrator\Factory;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionException;
@@ -248,7 +248,7 @@ final class UnitOfWork implements PropertyChangedListener
     /**
      * The HydratorFactory used for hydrating array Mongo documents to Doctrine object documents.
      */
-    private HydratorFactory $hydratorFactory;
+    private Factory $hydratorFactory;
 
     /**
      * The document persister instances used to persist document instances.
@@ -292,7 +292,7 @@ final class UnitOfWork implements PropertyChangedListener
     /**
      * Initializes a new UnitOfWork instance, bound to the given DocumentManager.
      */
-    public function __construct(DocumentManager $dm, EventManager $evm, HydratorFactory $hydratorFactory)
+    public function __construct(DocumentManager $dm, EventManager $evm, Factory $hydratorFactory)
     {
         $this->dm                    = $dm;
         $this->evm                   = $evm;
