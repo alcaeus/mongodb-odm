@@ -13,6 +13,7 @@ use Doctrine\ODM\MongoDB\Events;
 use Doctrine\ODM\MongoDB\Hydrator\Factory;
 use Doctrine\ODM\MongoDB\Hydrator\HydratorException;
 use Doctrine\ODM\MongoDB\Hydrator\HydratorInterface;
+use Doctrine\ODM\MongoDB\Hydrator\TypeMapHydrator;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Types\Type;
 use Doctrine\ODM\MongoDB\UnitOfWork;
@@ -29,7 +30,6 @@ use function is_dir;
 use function is_writable;
 use function mkdir;
 use function rename;
-use function rtrim;
 use function sprintf;
 use function str_replace;
 use function substr;
@@ -44,7 +44,7 @@ use const DIRECTORY_SEPARATOR;
  * @psalm-import-type Hints from UnitOfWork
  * @final
  */
-class ArrayHydratorFactory implements Factory
+class ArrayHydratorFactory implements Factory, TypeMapHydrator
 {
     /**
      * The DocumentManager this factory is bound to.
@@ -149,25 +149,6 @@ class ArrayHydratorFactory implements Factory
         } catch (Throwable) {
             // TODO: might need a more specific exception to catch
             return false;
-        }
-    }
-
-    /**
-     * Generates hydrator classes for all given classes.
-     *
-     * @param ClassMetadata<object>[] $classes The classes (ClassMetadata instances) for which to generate hydrators.
-     * @param string|null             $toDir   The target directory of the hydrator classes. If not specified, the
-     *                                    directory configured on the Configuration of the DocumentManager used
-     *                                    by this factory is used.
-     */
-    public function generateHydratorClasses(array $classes, ?string $toDir = null): void
-    {
-        $hydratorDir = $toDir ?: $this->hydratorDir;
-        $hydratorDir = rtrim($hydratorDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-        foreach ($classes as $class) {
-            $hydratorClassName = str_replace('\\', '', $class->name) . 'Hydrator';
-            $hydratorFileName  = $hydratorDir . $hydratorClassName . '.php';
-            $this->generateHydratorClass($class, $hydratorClassName, $hydratorFileName);
         }
     }
 
@@ -434,7 +415,6 @@ EOF
     /**
      * Hydrate array of MongoDB document data into the given document object.
      *
-     * @param array<string, mixed> $data
      * @psalm-param Hints $hints Any hints to account for during reconstitution/lookup of the document.
      *
      * @return array<string, mixed>
@@ -488,5 +468,15 @@ EOF
         $this->evm->dispatchEvent(Events::postLoad, new LifecycleEventArgs($document, $this->dm));
 
         return $data;
+    }
+
+    public function getTypeMap(): array
+    {
+        return DocumentManager::CLIENT_TYPEMAP;
+    }
+
+    public function prepareReadOptions(array $readOptions): array
+    {
+        return ['typeMap' => $this->getTypeMap()] + $readOptions;
     }
 }

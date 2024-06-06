@@ -25,6 +25,8 @@ use Doctrine\Persistence\NotifyPropertyChanged;
 use Doctrine\Persistence\PropertyChangedListener;
 use InvalidArgumentException;
 use MongoDB\Driver\Exception\RuntimeException;
+use MongoDB\Driver\ReadConcern;
+use MongoDB\Driver\ReadPreference;
 use MongoDB\Driver\Session;
 use MongoDB\Driver\WriteConcern;
 use ProxyManager\Proxy\GhostObjectInterface;
@@ -68,6 +70,12 @@ use function trigger_deprecation;
  *      safe?: int,
  *      w?: int,
  *      withTransaction?: bool,
+ *      writeConcern?: WriteConcern
+ * }
+ * @psalm-type ReadOptions array{
+ *      readConcern?: ReadConcern,
+ *      readPreference?: ReadPreference,
+ *      typeMap: array,
  *      writeConcern?: WriteConcern
  * }
  */

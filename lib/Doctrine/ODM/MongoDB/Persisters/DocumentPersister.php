@@ -10,6 +10,7 @@ use Doctrine\ODM\MongoDB\Aggregation\Stage\Sort;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Hydrator\Factory;
 use Doctrine\ODM\MongoDB\Hydrator\HydratorException;
+use Doctrine\ODM\MongoDB\Hydrator\TypeMapHydrator;
 use Doctrine\ODM\MongoDB\Iterator\CachingIterator;
 use Doctrine\ODM\MongoDB\Iterator\HydratingIterator;
 use Doctrine\ODM\MongoDB\Iterator\Iterator;
@@ -84,6 +85,7 @@ use function trigger_deprecation;
  * }
  * @psalm-import-type Hints from UnitOfWork
  * @psalm-import-type FieldMapping from ClassMetadata
+ * @psalm-import-type ReadOptions from UnitOfWork
  * @psalm-import-type SortMeta from Sort
  * @psalm-import-type SortShape from Sort
  */
@@ -454,12 +456,12 @@ final class DocumentPersister
     {
         assert($this->collection instanceof Collection);
         $query = $this->getQueryForDocument($document);
-        $data  = $this->collection->findOne($query);
+        $data  = $this->collection->findOne($query, $this->prepareReadOptions());
         if ($data === null) {
             throw MongoDBException::cannotRefreshDocument();
         }
 
-        $data = $this->hydratorFactory->hydrate($document, (array) $data);
+        $data = $this->hydratorFactory->hydrate($document, $data);
         $this->uow->setOriginalDocumentData($document, $data);
     }
 
@@ -499,8 +501,7 @@ final class DocumentPersister
         }
 
         assert($this->collection instanceof Collection);
-        $result = $this->collection->findOne($criteria, $options);
-        $result = $result !== null ? (array) $result : null;
+        $result = $this->collection->findOne($criteria, $this->prepareReadOptions($options));
 
         if ($this->class->isLockable) {
             $lockMapping = $this->class->fieldMappings[$this->class->lockField];
@@ -542,7 +543,7 @@ final class DocumentPersister
         }
 
         assert($this->collection instanceof Collection);
-        $baseCursor = $this->collection->find($criteria, $options);
+        $baseCursor = $this->collection->find($criteria, $this->prepareReadOptions($options));
 
         return $this->wrapCursor($baseCursor);
     }
@@ -603,7 +604,7 @@ final class DocumentPersister
         $id = $this->class->getIdentifierObject($document);
         assert($this->collection instanceof Collection);
 
-        return (bool) $this->collection->findOne(['_id' => $id], ['_id']);
+        return (bool) $this->collection->findOne(['_id' => $id], $this->prepareReadOptions(['projection' => ['_id']]));
     }
 
     /**
@@ -1558,6 +1559,22 @@ final class DocumentPersister
         $shardKeyQueryPart = $this->getShardKeyQuery($document);
 
         return array_merge(['_id' => $id], $shardKeyQueryPart);
+    }
+
+    /**
+     * @psalm-param ReadOptions $options
+     *
+     * @psalm-return ReadOptions
+     */
+    private function prepareReadOptions(array $options = []): array
+    {
+        $factory = $this->dm->getHydratorFactory();
+
+        if ($factory instanceof TypeMapHydrator) {
+            return $factory->prepareReadOptions($options);
+        }
+
+        return $options;
     }
 
     /**
