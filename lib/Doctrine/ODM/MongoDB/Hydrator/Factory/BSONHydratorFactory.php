@@ -7,11 +7,13 @@ namespace Doctrine\ODM\MongoDB\Hydrator\Factory;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Hydrator\BSONHydrator;
 use Doctrine\ODM\MongoDB\Hydrator\Factory;
+use Doctrine\ODM\MongoDB\Hydrator\HydratorInterface;
 use Doctrine\ODM\MongoDB\Hydrator\TypeMapHydrator;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionFactory;
 
 final class BSONHydratorFactory implements Factory, TypeMapHydrator
 {
+    /** @var list<HydratorInterface> */
     private array $hydrators = [];
 
     public function __construct(
@@ -23,6 +25,7 @@ final class BSONHydratorFactory implements Factory, TypeMapHydrator
     public function getHydratorFor(string $className): BSONHydrator
     {
         if (! isset($this->hydrators[$className])) {
+            // TODO: Cache resulting classes in files
             $this->hydrators[$className] = new BSONHydrator(
                 $this->documentManager,
                 $this->documentManager->getClassMetadata($className),

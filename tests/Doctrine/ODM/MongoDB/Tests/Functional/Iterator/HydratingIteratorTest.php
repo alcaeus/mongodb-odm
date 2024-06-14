@@ -65,7 +65,7 @@ final class HydratingIteratorTest extends BaseTestCase
         }
 
         foreach ($items as $item) {
-            yield Document::fromPHP($item);
+            yield $this->dm->getConfiguration()->useBSONHydrator ? Document::fromPHP($item) : $item;
         }
     }
 }

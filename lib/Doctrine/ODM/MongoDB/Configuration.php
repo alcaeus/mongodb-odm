@@ -120,7 +120,7 @@ class Configuration
 
     private bool $useTransactionalFlush = false;
 
-    private Factory $hydratorFactory;
+    public bool $useBSONHydrator = false;
 
     public function __construct()
     {
@@ -323,16 +323,6 @@ class Configuration
     public function getHydratorDir(): ?string
     {
         return $this->attributes['hydratorDir'] ?? null;
-    }
-
-    public function setHydratorFactory(Factory $hydratorFactory): void
-    {
-        $this->hydratorFactory = $hydratorFactory;
-    }
-
-    public function getHydratorFactory(): ?Factory
-    {
-        return $this->hydratorFactory ?? null;
     }
 
     /**

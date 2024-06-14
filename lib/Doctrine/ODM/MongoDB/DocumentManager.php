@@ -6,6 +6,7 @@ namespace Doctrine\ODM\MongoDB;
 
 use Doctrine\Common\EventManager;
 use Doctrine\ODM\MongoDB\Hydrator\Factory;
+use Doctrine\ODM\MongoDB\Hydrator\Factory\ArrayHydratorFactory;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadataFactoryInterface;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
@@ -172,19 +173,22 @@ class DocumentManager implements ObjectManager
             $this->metadataFactory->setCache($cacheDriver);
         }
 
-        $this->hydratorFactory = new Factory\BSONHydratorFactory(
-            $this,
-            new DefaultPersistentCollectionFactory(),
-        );
-        $hydratorDir           = $this->config->getHydratorDir();
-        $hydratorNs            = $this->config->getHydratorNamespace();
-//        $this->hydratorFactory = new ArrayHydratorFactory(
-//            $this,
-//            $this->eventManager,
-//            $hydratorDir,
-//            $hydratorNs,
-//            $this->config->getAutoGenerateHydratorClasses(),
-//        );
+        if ($this->config->useBSONHydrator) {
+            $this->hydratorFactory = new Factory\BSONHydratorFactory(
+                $this,
+                new DefaultPersistentCollectionFactory(),
+            );
+        } else {
+            $hydratorDir           = $this->config->getHydratorDir();
+            $hydratorNs            = $this->config->getHydratorNamespace();
+            $this->hydratorFactory = new ArrayHydratorFactory(
+                $this,
+                $this->eventManager,
+                $hydratorDir,
+                $hydratorNs,
+                $this->config->getAutoGenerateHydratorClasses(),
+            );
+        }
 
         $this->unitOfWork        = new UnitOfWork($this, $this->eventManager, $this->hydratorFactory);
         $this->schemaManager     = new SchemaManager($this, $this->metadataFactory);
