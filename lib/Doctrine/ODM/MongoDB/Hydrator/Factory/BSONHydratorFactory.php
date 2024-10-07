@@ -7,7 +7,6 @@ namespace Doctrine\ODM\MongoDB\Hydrator\Factory;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Hydrator\BSONHydrator;
 use Doctrine\ODM\MongoDB\Hydrator\Factory;
-use Doctrine\ODM\MongoDB\Hydrator\HydratorInterface;
 use Doctrine\ODM\MongoDB\Hydrator\TypeMapHydrator;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionFactory;
 

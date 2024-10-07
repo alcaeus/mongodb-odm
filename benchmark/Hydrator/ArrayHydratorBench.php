@@ -7,6 +7,8 @@ namespace Doctrine\ODM\MongoDB\Benchmark\Hydrator;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use MongoDB\BSON\Document;
 
+use function array_map;
+
 final class ArrayHydratorBench extends AbstractHydrateDocumentBench
 {
     protected function useBSONHydrator(): bool

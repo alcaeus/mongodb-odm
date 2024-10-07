@@ -6,25 +6,18 @@ namespace Doctrine\ODM\MongoDB\Benchmark\Hydrator;
 
 use Doctrine\ODM\MongoDB\Benchmark\BaseBench;
 use Doctrine\ODM\MongoDB\Configuration;
-use Doctrine\ODM\MongoDB\Hydrator\BSONHydrator;
 use Doctrine\ODM\MongoDB\Hydrator\HydratorInterface;
-use Doctrine\ODM\MongoDB\Hydrator\TypeMapHydrator;
-use Doctrine\ODM\MongoDB\PersistentCollection\DefaultPersistentCollectionFactory;
 use Documents\User;
-use Generator;
 use InvalidArgumentException;
 use MongoDB\BSON\Document;
 use MongoDB\BSON\ObjectId;
 use MongoDB\BSON\UTCDateTime;
 use PhpBench\Attributes\BeforeMethods;
 use PhpBench\Attributes\Iterations;
-use PhpBench\Attributes\ParamProviders;
 use PhpBench\Attributes\Revs;
 use PhpBench\Attributes\Warmup;
 
-use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use function sprintf;
-use function ucfirst;
 
 #[BeforeMethods(['initDocumentManager', 'init'])]
 #[Warmup(1)]
@@ -127,7 +120,7 @@ abstract class AbstractHydrateDocumentBench extends BaseBench
 
     protected function createDocumentManagerConfiguration(): Configuration
     {
-        $config = parent::createDocumentManagerConfiguration();
+        $config                  = parent::createDocumentManagerConfiguration();
         $config->useBSONHydrator = $this->useBSONHydrator();
 
         return $config;
