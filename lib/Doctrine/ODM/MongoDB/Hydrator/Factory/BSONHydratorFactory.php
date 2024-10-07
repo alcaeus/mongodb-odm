@@ -13,7 +13,7 @@ use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionFactory;
 
 final class BSONHydratorFactory implements Factory, TypeMapHydrator
 {
-    /** @var list<HydratorInterface> */
+    /** @var list<BSONHydrator> */
     private array $hydrators = [];
 
     public function __construct(
@@ -24,16 +24,8 @@ final class BSONHydratorFactory implements Factory, TypeMapHydrator
 
     public function getHydratorFor(string $className): BSONHydrator
     {
-        if (! isset($this->hydrators[$className])) {
-            // TODO: Cache resulting classes in files
-            $this->hydrators[$className] = new BSONHydrator(
-                $this->documentManager,
-                $this->documentManager->getClassMetadata($className),
-                $this->collectionFactory,
-            );
-        }
-
-        return $this->hydrators[$className];
+        // TODO: Cache resulting classes in files
+        return $this->hydrators[$className] ??= $this->createHydrator($className);
     }
 
     public function hasHydratorFor(string $className): bool
@@ -54,5 +46,16 @@ final class BSONHydratorFactory implements Factory, TypeMapHydrator
     public function prepareReadOptions(array $readOptions): array
     {
         return ['typeMap' => $this->getTypeMap()] + $readOptions;
+    }
+
+    /** @param class-string $className */
+    private function createHydrator(string $className): BSONHydrator
+    {
+        return new BSONHydrator(
+            $this->documentManager,
+            $this->documentManager->getClassMetadata($className),
+            $this,
+            $this->collectionFactory,
+        );
     }
 }

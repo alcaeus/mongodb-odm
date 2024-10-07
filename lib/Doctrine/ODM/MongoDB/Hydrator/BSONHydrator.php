@@ -25,6 +25,7 @@ final class BSONHydrator implements TypeMapHydrator
     public function __construct(
         private readonly DocumentManager $documentManager,
         private readonly ClassMetadata $classMetadata,
+        private readonly Factory $hydratorFactory,
         private readonly PersistentCollectionFactory $collectionFactory,
     ) {
         $this->fallbackType = Type::getType('raw');
@@ -122,8 +123,7 @@ final class BSONHydrator implements TypeMapHydrator
 
                 $this->documentManager->getUnitOfWork()->setParentAssociation($embeddedDocument, $mapping, $document, '%1$s');
 
-                // TODO: don't rely on document manager to provide factory
-                $embeddedData = $this->documentManager->getHydratorFactory()->hydrate($embeddedDocument, $value, $hints);
+                $embeddedData = $this->hydratorFactory->hydrate($embeddedDocument, $value, $hints);
                 $embeddedId   = $embeddedMetadata->identifier && isset($embeddedData[$embeddedMetadata->identifier]) ? $embeddedData[$embeddedMetadata->identifier] : null;
 
                 // TODO: extract; this shouldn't really be responsibility of the hydrator
@@ -148,7 +148,6 @@ final class BSONHydrator implements TypeMapHydrator
                 $targetMetadata = $this->documentManager->getClassMetadata($className);
                 $id             = $targetMetadata->getPHPIdentifierValue($identifier);
 
-                // Todo: don't rely on document manager to provide factory
                 return $this->documentManager->getReference($className, $id);
 
             default:

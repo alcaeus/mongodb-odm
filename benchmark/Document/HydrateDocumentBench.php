@@ -158,6 +158,7 @@ final class HydrateDocumentBench extends BaseBench
         self::$bsonHydrator = new BSONHydrator(
             $dm,
             $dm->getClassMetadata(User::class),
+            $dm->getHydratorFactory(),
             new DefaultPersistentCollectionFactory(),
         );
     }
