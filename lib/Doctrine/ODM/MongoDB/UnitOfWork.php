@@ -76,8 +76,9 @@ use function trigger_deprecation;
  * @psalm-type ReadOptions array{
  *      readConcern?: ReadConcern,
  *      readPreference?: ReadPreference,
- *      typeMap: array,
- *      writeConcern?: WriteConcern
+ *      typeMap?: array,
+ *      writeConcern?: WriteConcern,
+ *      ...
  * }
  */
 final class UnitOfWork implements PropertyChangedListener

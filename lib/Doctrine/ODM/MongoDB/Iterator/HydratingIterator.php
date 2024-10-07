@@ -90,7 +90,7 @@ final class HydratingIterator implements Iterator
      *
      * @return TDocument|null
      */
-    private function hydrate(array|Document $document): ?object
+    private function hydrate(array|Document|null $document): ?object
     {
         return $document !== null ? $this->unitOfWork->getOrCreateDocument($this->class->name, $document, $this->unitOfWorkHints) : null;
     }

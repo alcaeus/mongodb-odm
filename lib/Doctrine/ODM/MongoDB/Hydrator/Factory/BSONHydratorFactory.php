@@ -12,7 +12,7 @@ use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionFactory;
 
 final class BSONHydratorFactory implements Factory, TypeMapHydrator
 {
-    /** @var list<BSONHydrator> */
+    /** @var array<class-string, BSONHydrator> */
     private array $hydrators = [];
 
     public function __construct(

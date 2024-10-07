@@ -34,10 +34,11 @@ final class Aggregation implements IteratorAggregate
     public function getIterator(): Iterator
     {
         // Force cursor to be used
-        $options = array_merge($this->options, ['cursor' => true]);
+        $options         = array_merge($this->options, ['cursor' => true]);
+        $hydratorFactory = $this->classMetadata ? $this->dm->getHydratorFactory() : null;
 
-        if ($this->classMetadata && $this->dm->getHydratorFactory() instanceof TypeMapHydrator) {
-            $options = $this->dm->getHydratorFactory()->prepareReadOptions($options);
+        if ($hydratorFactory instanceof TypeMapHydrator) {
+            $options = $hydratorFactory->prepareReadOptions($options);
         }
 
         $cursor = $this->collection->aggregate($this->pipeline, $options);

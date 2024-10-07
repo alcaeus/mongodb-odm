@@ -37,6 +37,11 @@
       <code><![CDATA[parent::__construct($objectManager, $entityClass)]]></code>
     </TooManyArguments>
   </file>
+  <file src="lib/Doctrine/ODM/MongoDB/Hydrator/HydratorFactory.php">
+    <InvalidExtendClass>
+      <code><![CDATA[ArrayHydratorFactory]]></code>
+    </InvalidExtendClass>
+  </file>
   <file src="lib/Doctrine/ODM/MongoDB/Iterator/CachingIterator.php">
     <ImplementedReturnTypeMismatch>
       <code><![CDATA[TValue|false]]></code>

@@ -27,6 +27,8 @@ interface Factory extends HydratorInterface
      * Hydrate any data into an object, if you can
      *
      * @psalm-param Hints $hints Any hints to account for during reconstitution/lookup of the document.
+     *
+     * @return array<string, mixed>
      */
     public function hydrate(object $document, mixed $data, array $hints = []): array;
 }

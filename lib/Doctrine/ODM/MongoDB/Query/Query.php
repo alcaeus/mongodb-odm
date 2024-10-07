@@ -545,8 +545,10 @@ final class Query implements IteratorAggregate
 
     private function prepareReadOptions(array $readOptions): array
     {
-        if ($this->hydrate && $this->dm->getHydratorFactory() instanceof TypeMapHydrator) {
-            return $this->dm->getHydratorFactory()->prepareReadOptions($readOptions);
+        $hydratorFactory = $this->hydrate ? $this->dm->getHydratorFactory() : null;
+
+        if ($hydratorFactory instanceof TypeMapHydrator) {
+            return $hydratorFactory->prepareReadOptions($readOptions);
         }
 
         return $readOptions;
