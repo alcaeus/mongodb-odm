@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Doctrine\ODM\MongoDB\Event;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
+use MongoDB\BSON\Document;
 use MongoDB\Driver\Session;
 
 /**
@@ -16,7 +17,7 @@ final class PreLoadEventArgs extends LifecycleEventArgs
     public function __construct(
         object $document,
         DocumentManager $dm,
-        private array &$data,
+        private array|Document &$data,
         ?Session $session = null,
     ) {
         parent::__construct($document, $dm, $session);
@@ -25,9 +26,9 @@ final class PreLoadEventArgs extends LifecycleEventArgs
     /**
      * Get the array of data to be loaded and hydrated.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed>|Document
      */
-    public function &getData(): array
+    public function &getData(): array|Document
     {
         return $this->data;
     }
