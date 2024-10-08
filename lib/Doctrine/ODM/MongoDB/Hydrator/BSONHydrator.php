@@ -9,6 +9,7 @@ use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionFactory;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionInterface;
 use Doctrine\ODM\MongoDB\Query\Query;
+use Doctrine\ODM\MongoDB\Types\DateType;
 use Doctrine\ODM\MongoDB\Types\Type;
 use Doctrine\ODM\MongoDB\Utility\LifecycleEventManager;
 use MongoDB\BSON\Document;
@@ -92,7 +93,8 @@ final class BSONHydrator implements TypeMapHydrator
                 continue;
             }
 
-            $fieldValue = null;
+            $fieldValue    = null;
+            $hydratedValue = null;
             if (! empty($mapping['association'])) {
                 $fieldValue = $this->hydrateAssociation($document, $data, $fieldName, $documentFieldValue, $mapping, $hints);
 //            } elseif ($documentFieldValue === null) {
@@ -101,10 +103,18 @@ final class BSONHydrator implements TypeMapHydrator
             } else {
                 $type       = Type::hasType($mapping['type']) ? Type::getType($mapping['type']) : $this->fallbackType;
                 $fieldValue = $type->convertToPHPValue($documentFieldValue);
+
+                // For dates, ensure that we're storing a different value in $hydratedData than in the document
+                // This is to ensure that changes to the instance stored in the document don't apply to $hydratedData
+                // at the same time, breaking change tracking
+                // TODO: This is broken behaviour and needs changing
+                if ($type instanceof DateType) {
+                    $hydratedValue = clone $fieldValue;
+                }
             }
 
             $this->classMetadata->reflFields[$fieldName]->setValue($document, $fieldValue);
-            $hydratedData[$fieldName] = $fieldValue;
+            $hydratedData[$fieldName] = $hydratedValue ?? $fieldValue;
         }
 
         $this->eventManager->postLoad($this->classMetadata, $document);
