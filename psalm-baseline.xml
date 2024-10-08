@@ -38,9 +38,18 @@
     </TooManyArguments>
   </file>
   <file src="lib/Doctrine/ODM/MongoDB/Hydrator/HydratorFactory.php">
+    <ConstructorSignatureMismatch>
+      <code><![CDATA[$evm]]></code>
+    </ConstructorSignatureMismatch>
+    <ImplementedParamTypeMismatch>
+      <code><![CDATA[$evm]]></code>
+    </ImplementedParamTypeMismatch>
     <InvalidExtendClass>
       <code><![CDATA[ArrayHydratorFactory]]></code>
     </InvalidExtendClass>
+    <MethodSignatureMismatch>
+      <code><![CDATA[public function __construct(DocumentManager $dm, EventManager $evm, ?string $hydratorDir, ?string $hydratorNs, int $autoGenerate)]]></code>
+    </MethodSignatureMismatch>
   </file>
   <file src="lib/Doctrine/ODM/MongoDB/Iterator/CachingIterator.php">
     <ImplementedReturnTypeMismatch>

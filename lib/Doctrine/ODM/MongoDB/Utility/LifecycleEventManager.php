@@ -10,12 +10,13 @@ use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Event\DocumentNotFoundEventArgs;
 use Doctrine\ODM\MongoDB\Event\LifecycleEventArgs;
 use Doctrine\ODM\MongoDB\Event\PostCollectionLoadEventArgs;
+use Doctrine\ODM\MongoDB\Event\PreLoadEventArgs;
 use Doctrine\ODM\MongoDB\Event\PreUpdateEventArgs;
 use Doctrine\ODM\MongoDB\Events;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\MongoDBException;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionInterface;
-use Doctrine\ODM\MongoDB\UnitOfWork;
+use MongoDB\BSON\Document;
 use MongoDB\Driver\Session;
 
 use function spl_object_hash;
@@ -30,7 +31,7 @@ final class LifecycleEventManager
     /** @var array<string, array<string, true>> */
     private array $transactionalEvents = [];
 
-    public function __construct(private DocumentManager $dm, private UnitOfWork $uow, private EventManager $evm)
+    public function __construct(private DocumentManager $dm, private EventManager $evm)
     {
     }
 
@@ -58,6 +59,29 @@ final class LifecycleEventManager
         $this->evm->dispatchEvent(Events::documentNotFound, $eventArgs);
 
         return $eventArgs->isExceptionDisabled();
+    }
+
+    /**
+     * @param array<string, mixed>|Document $data
+     *
+     * @return array<string, mixed>|Document
+     */
+    public function preLoad(ClassMetadata $class, object $document, array|Document $data): array|Document
+    {
+        $eventArgs = new PreLoadEventArgs($document, $this->dm, $data);
+
+        $class->invokeLifecycleCallbacks(Events::preLoad, $document, [$eventArgs]);
+        $this->dispatchEvent($class, Events::preLoad, $eventArgs);
+
+        return $eventArgs->getData();
+    }
+
+    public function postLoad(ClassMetadata $class, object $document): void
+    {
+        $eventArgs = new LifecycleEventArgs($document, $this->dm);
+
+        $class->invokeLifecycleCallbacks(Events::postLoad, $document, [$eventArgs]);
+        $this->dispatchEvent($class, Events::postLoad, $eventArgs);
     }
 
     /**
@@ -189,15 +213,15 @@ final class LifecycleEventManager
         }
 
         if (! empty($class->lifecycleCallbacks[Events::preUpdate])) {
-            $eventArgs = new PreUpdateEventArgs($document, $this->dm, $this->uow->getDocumentChangeSet($document), $session);
+            $eventArgs = new PreUpdateEventArgs($document, $this->dm, $this->dm->getUnitOfWork()->getDocumentChangeSet($document), $session);
             $class->invokeLifecycleCallbacks(Events::preUpdate, $document, [$eventArgs]);
-            $this->uow->recomputeSingleDocumentChangeSet($class, $document);
+            $this->dm->getUnitOfWork()->recomputeSingleDocumentChangeSet($class, $document);
         }
 
         $this->dispatchEvent(
             $class,
             Events::preUpdate,
-            new PreUpdateEventArgs($document, $this->dm, $this->uow->getDocumentChangeSet($document), $session),
+            new PreUpdateEventArgs($document, $this->dm, $this->dm->getUnitOfWork()->getDocumentChangeSet($document), $session),
         );
         $this->cascadePreUpdate($class, $document, $session);
     }
@@ -221,7 +245,7 @@ final class LifecycleEventManager
             $values = $mapping['type'] === ClassMetadata::ONE ? [$value] : $value;
 
             foreach ($values as $entry) {
-                if ($this->uow->isScheduledForInsert($entry) || empty($this->uow->getDocumentChangeSet($entry))) {
+                if ($this->dm->getUnitOfWork()->isScheduledForInsert($entry) || empty($this->dm->getUnitOfWork()->getDocumentChangeSet($entry))) {
                     continue;
                 }
 
@@ -249,12 +273,12 @@ final class LifecycleEventManager
             $values = $mapping['type'] === ClassMetadata::ONE ? [$value] : $value;
 
             foreach ($values as $entry) {
-                if (empty($this->uow->getDocumentChangeSet($entry)) && ! $this->uow->hasScheduledCollections($entry)) {
+                if (empty($this->dm->getUnitOfWork()->getDocumentChangeSet($entry)) && ! $this->dm->getUnitOfWork()->hasScheduledCollections($entry)) {
                     continue;
                 }
 
                 $entryClass = $this->dm->getClassMetadata($entry::class);
-                $event      = $this->uow->isScheduledForInsert($entry) ? Events::postPersist : Events::postUpdate;
+                $event      = $this->dm->getUnitOfWork()->isScheduledForInsert($entry) ? Events::postPersist : Events::postUpdate;
 
                 if (! $this->shouldDispatchEvent($entry, $event, $session)) {
                     continue;

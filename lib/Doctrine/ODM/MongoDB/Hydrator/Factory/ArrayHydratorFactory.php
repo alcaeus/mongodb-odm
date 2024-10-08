@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Doctrine\ODM\MongoDB\Hydrator\Factory;
 
-use Doctrine\Common\EventManager;
 use Doctrine\ODM\MongoDB\Configuration;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Event\LifecycleEventArgs;
-use Doctrine\ODM\MongoDB\Event\PreLoadEventArgs;
 use Doctrine\ODM\MongoDB\Events;
 use Doctrine\ODM\MongoDB\Hydrator\ArrayHydrator;
 use Doctrine\ODM\MongoDB\Hydrator\Factory;
@@ -17,6 +15,7 @@ use Doctrine\ODM\MongoDB\Hydrator\TypeMapHydrator;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Types\Type;
 use Doctrine\ODM\MongoDB\UnitOfWork;
+use Doctrine\ODM\MongoDB\Utility\LifecycleEventManager;
 use ProxyManager\Proxy\GhostObjectInterface;
 use Throwable;
 
@@ -54,7 +53,7 @@ class ArrayHydratorFactory implements Factory, TypeMapHydrator
     /**
      * The EventManager associated with this Hydrator
      */
-    private EventManager $evm;
+    private LifecycleEventManager $evm;
 
     /**
      * Which algorithm to use to automatically (re)generate hydrator classes.
@@ -79,7 +78,7 @@ class ArrayHydratorFactory implements Factory, TypeMapHydrator
     private array $hydrators = [];
 
     /** @throws HydratorException */
-    public function __construct(DocumentManager $dm, EventManager $evm, ?string $hydratorDir, ?string $hydratorNs, int $autoGenerate)
+    public function __construct(DocumentManager $dm, LifecycleEventManager $evm, ?string $hydratorDir, ?string $hydratorNs, int $autoGenerate)
     {
         if (! $hydratorDir) {
             throw HydratorException::hydratorDirectoryRequired();
@@ -427,12 +426,7 @@ EOF
     {
         $metadata = $this->dm->getClassMetadata($document::class);
         // Invoke preLoad lifecycle events and listeners
-        if (! empty($metadata->lifecycleCallbacks[Events::preLoad])) {
-            $args = [new PreLoadEventArgs($document, $this->dm, $data)];
-            $metadata->invokeLifecycleCallbacks(Events::preLoad, $document, $args);
-        }
-
-        $this->evm->dispatchEvent(Events::preLoad, new PreLoadEventArgs($document, $this->dm, $data));
+        $this->evm->preLoad($metadata, $document, $data);
 
         // alsoLoadMethods may transform the document before hydration
         if (! empty($metadata->alsoLoadMethods)) {
@@ -469,7 +463,7 @@ EOF
             $metadata->invokeLifecycleCallbacks(Events::postLoad, $document, [new LifecycleEventArgs($document, $this->dm)]);
         }
 
-        $this->evm->dispatchEvent(Events::postLoad, new LifecycleEventArgs($document, $this->dm));
+        $this->evm->postLoad($metadata, $document);
 
         return $data;
     }

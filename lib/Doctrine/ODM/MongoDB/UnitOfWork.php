@@ -307,7 +307,7 @@ final class UnitOfWork implements PropertyChangedListener
         $this->dm                    = $dm;
         $this->evm                   = $evm;
         $this->hydratorFactory       = $hydratorFactory;
-        $this->lifecycleEventManager = new LifecycleEventManager($dm, $this, $evm);
+        $this->lifecycleEventManager = new LifecycleEventManager($dm, $evm);
         $this->reflectionService     = new RuntimeReflectionService();
     }
 

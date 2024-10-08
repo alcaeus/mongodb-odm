@@ -21,6 +21,7 @@ use Doctrine\ODM\MongoDB\Repository\DocumentRepository;
 use Doctrine\ODM\MongoDB\Repository\GridFSRepository;
 use Doctrine\ODM\MongoDB\Repository\RepositoryFactory;
 use Doctrine\ODM\MongoDB\Repository\ViewRepository;
+use Doctrine\ODM\MongoDB\Utility\LifecycleEventManager;
 use Doctrine\Persistence\Mapping\ProxyClassNameResolver;
 use Doctrine\Persistence\ObjectManager;
 use InvalidArgumentException;
@@ -183,7 +184,7 @@ class DocumentManager implements ObjectManager
             $hydratorNs            = $this->config->getHydratorNamespace();
             $this->hydratorFactory = new ArrayHydratorFactory(
                 $this,
-                $this->eventManager,
+                new LifecycleEventManager($this, $this->eventManager),
                 $hydratorDir,
                 $hydratorNs,
                 $this->config->getAutoGenerateHydratorClasses(),
