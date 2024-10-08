@@ -19,7 +19,7 @@ class CommentRepository extends DocumentRepository
     {
         return $this->getDocumentPersister()
             ->loadAll([], ['date' => 'desc'], 1)
-            ->current();
+            ->current() ?: null;
     }
 
     /** @return Iterator<Comment> */
