@@ -43,6 +43,18 @@ final class BSONHydrator implements TypeMapHydrator
 
         $hydratedData = [];
 
+        if (! empty($this->classMetadata->alsoLoadMethods)) {
+            foreach ($this->classMetadata->alsoLoadMethods as $method => $fieldNames) {
+                foreach ($fieldNames as $fieldName) {
+                    // Invoke the method only once for the first field we find
+                    if ($data->has($fieldName)) {
+                        $document->$method($data->get($fieldName));
+                        continue 2;
+                    }
+                }
+            }
+        }
+
         if ($document instanceof GhostObjectInterface && $document->getProxyInitializer() !== null) {
             // Inject an empty initialiser to not load any object data
             $document->setProxyInitializer(static function (
@@ -59,25 +71,33 @@ final class BSONHydrator implements TypeMapHydrator
         }
 
         foreach ($this->classMetadata->fieldMappings as $fieldName => $mapping) {
-            $documentFieldName = $mapping['name'];
-            if (! $data->has($documentFieldName)) {
-                if (empty($mapping['association'])) {
-                    continue;
-                }
+            $documentFieldName  = $mapping['name'];
+            $documentFieldValue = null;
+            $hasField           = false;
 
-                $documentFieldValue = null;
-            } else {
+            if ($data->has($documentFieldName)) {
+                $hasField           = true;
                 $documentFieldValue = $data->get($documentFieldName);
+            } elseif (isset($mapping['alsoLoadFields'])) {
+                foreach ($mapping['alsoLoadFields'] as $alsoLoadField) {
+                    if ($data->has($alsoLoadField)) {
+                        $hasField           = true;
+                        $documentFieldValue = $data->get($alsoLoadField);
+                        break;
+                    }
+                }
             }
 
-//            if ($documentFieldValue === null && !$mapping['nullable']) {
-//                // TODO: error?
-//                continue;
-//            }
+            if (! $hasField && empty($mapping['association'])) {
+                continue;
+            }
 
             $fieldValue = null;
             if (! empty($mapping['association'])) {
                 $fieldValue = $this->hydrateAssociation($document, $data, $fieldName, $documentFieldValue, $mapping, $hints);
+//            } elseif ($documentFieldValue === null) {
+//                // TODO: Do we need to consider $mapping['nullable'] here?
+//                continue;
             } else {
                 $type       = Type::hasType($mapping['type']) ? Type::getType($mapping['type']) : $this->fallbackType;
                 $fieldValue = $type->convertToPHPValue($documentFieldValue);
