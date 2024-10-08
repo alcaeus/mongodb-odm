@@ -20,6 +20,10 @@ class GH852Test extends BaseTestCase
     #[DataProvider('provideIdGenerators')]
     public function testA(Closure $idGenerator): void
     {
+        if ($this->dm->getConfiguration()->useBSONHydrator) {
+            $this->markTestIncomplete('Test needs rewriting for BSON hydrators');
+        }
+
         $parent       = new GH852Document();
         $parent->id   = $idGenerator('parent');
         $parent->name = 'parent';

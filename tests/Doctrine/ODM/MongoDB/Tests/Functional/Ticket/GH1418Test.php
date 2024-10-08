@@ -15,6 +15,10 @@ class GH1418Test extends BaseTestCase
 {
     public function testManualHydrateAndMerge(): void
     {
+        if ($this->dm->getConfiguration()->useBSONHydrator) {
+            $this->markTestIncomplete('Test needs rewriting for BSON hydrators');
+        }
+
         $document = new GH1418Document();
         $this->dm->getHydratorFactory()->hydrate($document, [
             '_id' => 1,

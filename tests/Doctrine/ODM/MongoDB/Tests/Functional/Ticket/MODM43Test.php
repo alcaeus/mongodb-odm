@@ -15,6 +15,10 @@ class MODM43Test extends BaseTestCase
 {
     public function testTest(): void
     {
+        if ($this->dm->getConfiguration()->useBSONHydrator) {
+            $this->markTestIncomplete('Test needs changing for BSON hydrators');
+        }
+
         $person = [
             '_id' => new ObjectId(),
             'name' => 'Jonathan Wage',

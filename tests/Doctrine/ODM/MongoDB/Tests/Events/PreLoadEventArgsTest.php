@@ -12,6 +12,10 @@ class PreLoadEventArgsTest extends BaseTestCase
 {
     public function testGetData(): void
     {
+        if ($this->dm->getConfiguration()->useBSONHydrator) {
+            $this->markTestIncomplete('Test needs changing for BSON hydrators');
+        }
+
         $document = new Group('test');
         $dm       = $this->dm;
         $data     = ['id' => '1234', 'name' => 'test'];
