@@ -94,6 +94,9 @@ abstract class BaseTestCase extends TestCase
         // Enable transactions if supported
         $config->setUseTransactionalFlush(static::$allowsTransactions && self::supportsTransactions());
 
+        // TODO: Use configuration
+        $config->useBSONHydrator = true;
+
         return $config;
     }
 
