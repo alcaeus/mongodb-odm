@@ -18,6 +18,7 @@ use Doctrine\ODM\MongoDB\MongoDBException;
 use Doctrine\ODM\MongoDB\UnitOfWork;
 use InvalidArgumentException;
 use IteratorAggregate;
+use MongoDB\BSON\Document;
 use MongoDB\Collection;
 use MongoDB\DeleteResult;
 use MongoDB\Driver\ReadPreference;
@@ -217,7 +218,7 @@ final class Query implements IteratorAggregate
         if (
             ($this->query['type'] === self::TYPE_FIND_AND_UPDATE ||
                 $this->query['type'] === self::TYPE_FIND_AND_REMOVE) &&
-            is_array($results) && isset($results['_id'])
+                $this->isDocumentWithIdentifier($results)
         ) {
             $results = $uow->getOrCreateDocument($this->class->name, $results, $this->unitOfWorkHints);
 
@@ -552,5 +553,18 @@ final class Query implements IteratorAggregate
         }
 
         return $readOptions;
+    }
+
+    private function isDocumentWithIdentifier(array|object|null $results): bool
+    {
+        if (is_array($results)) {
+            return isset($results['_id']);
+        }
+
+        if ($results instanceof Document) {
+            return $results->has('_id');
+        }
+
+        return false;
     }
 }
