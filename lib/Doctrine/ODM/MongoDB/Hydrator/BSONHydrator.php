@@ -7,6 +7,7 @@ namespace Doctrine\ODM\MongoDB\Hydrator;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionFactory;
+use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionInterface;
 use Doctrine\ODM\MongoDB\Query\Query;
 use Doctrine\ODM\MongoDB\Types\Type;
 use Doctrine\ODM\MongoDB\Utility\LifecycleEventManager;
@@ -15,6 +16,8 @@ use MongoDB\BSON\PackedArray;
 use ProxyManager\Proxy\GhostObjectInterface;
 use UnexpectedValueException;
 
+use function array_merge;
+use function call_user_func;
 use function get_debug_type;
 use function gettype;
 use function sprintf;
@@ -95,66 +98,15 @@ final class BSONHydrator implements TypeMapHydrator
             case ClassMetadata::EMBED_MANY:
             case ClassMetadata::REFERENCE_MANY:
                 // All many relationships are handled by a PersistentCollection
-                $collection = $this->collectionFactory->create($this->documentManager, $mapping);
-                $collection->setHints($hints);
-                $collection->setOwner($document, $mapping);
-                $collection->setInitialized(false);
-
-                // TODO: Use lazy BSON evaluation
-                if ($value instanceof PackedArray || $value instanceof Document) {
-                    $collection->setMongoData($value->toPHP(['document' => 'bson']));
-                } elseif ($value !== null) {
-                    throw HydratorException::associationTypeMismatch(
-                        $document::class,
-                        $fieldName,
-                        sprintf('%s or %s', PackedArray::class, Document::class),
-                        get_debug_type($value),
-                    );
-                }
-
-                return $collection;
+                return $this->hydratePersistentCollection($document, $fieldName, $value, $mapping, $hints);
 
             case ClassMetadata::EMBED_ONE:
-                if ($value === null) {
-                    return null;
-                }
-
-                if (! $value instanceof Document) {
-                    throw HydratorException::associationTypeMismatch($document::class, $fieldName, Document::class, gettype($value));
-                }
-
-                $className        = $this->documentManager->getClassNameForAssociation($mapping, $value);
-                $embeddedMetadata = $this->documentManager->getClassMetadata($className);
-                $embeddedDocument = $embeddedMetadata->newInstance();
-
-                $this->documentManager->getUnitOfWork()->setParentAssociation($embeddedDocument, $mapping, $document, '%1$s');
-
-                $embeddedData = $this->hydratorFactory->hydrate($embeddedDocument, $value, $hints);
-                $embeddedId   = $embeddedMetadata->identifier && isset($embeddedData[$embeddedMetadata->identifier]) ? $embeddedData[$embeddedMetadata->identifier] : null;
-
-                // TODO: extract; this shouldn't really be responsibility of the hydrator
-                if (empty($hints[Query::HINT_READ_ONLY])) {
-                    $this->documentManager->getUnitOfWork()->registerManaged($embeddedDocument, $embeddedId, $embeddedData);
-                }
-
-                return $embeddedDocument;
+                return $this->hydrateEmbedOne($document, $fieldName, $value, $mapping, $hints);
 
             case ClassMetadata::REFERENCE_ONE:
-                // TODO: inverse side
-                if ($value === null) {
-                    return null;
-                }
-
-                if ($mapping['storeAs'] !== ClassMetadata::REFERENCE_STORE_AS_ID && ! $value instanceof Document) {
-                    throw HydratorException::associationTypeMismatch($document::class, $fieldName, Document::class, gettype($value));
-                }
-
-                $className      = $this->documentManager->getClassNameForAssociation($mapping, $value);
-                $identifier     = ClassMetadata::getReferenceId($value, $mapping['storeAs']);
-                $targetMetadata = $this->documentManager->getClassMetadata($className);
-                $id             = $targetMetadata->getPHPIdentifierValue($identifier);
-
-                return $this->documentManager->getReference($className, $id);
+                return $mapping['isInverseSide']
+                    ? $this->hydrateInverseReferenceOne($document, $fieldName, $data->get('_id'), $mapping)
+                    : $this->hydrateReferenceOne($document, $fieldName, $value, $mapping);
 
             default:
                 throw new UnexpectedValueException(sprintf('Unknown association mapping type "%s" for field "%s" in class "%s".', $mapping['association'], $fieldName, $this->classMetadata->name));
@@ -169,5 +121,99 @@ final class BSONHydrator implements TypeMapHydrator
     public function prepareReadOptions(array $readOptions): array
     {
         return ['typeMap' => $this->getTypeMap()] + $readOptions;
+    }
+
+    private function hydratePersistentCollection(object $document, string $fieldName, mixed $value, array $mapping, array $hints): PersistentCollectionInterface
+    {
+        $collection = $this->collectionFactory->create($this->documentManager, $mapping);
+        $collection->setHints($hints);
+        $collection->setOwner($document, $mapping);
+        $collection->setInitialized(false);
+
+        // TODO: Use lazy BSON evaluation
+        if ($value instanceof PackedArray || $value instanceof Document) {
+            $collection->setMongoData($value->toPHP(['root' => 'array', 'document' => 'bson']));
+        } elseif ($value !== null) {
+            throw HydratorException::associationTypeMismatch(
+                $document::class,
+                $fieldName,
+                sprintf('%s or %s', PackedArray::class, Document::class),
+                get_debug_type($value),
+            );
+        }
+
+        return $collection;
+    }
+
+    private function hydrateEmbedOne(object $document, string $fieldName, mixed $value, array $mapping, array $hints): ?object
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (! $value instanceof Document) {
+            throw HydratorException::associationTypeMismatch($document::class, $fieldName, Document::class, gettype($value));
+        }
+
+        $className        = $this->documentManager->getClassNameForAssociation($mapping, $value);
+        $embeddedMetadata = $this->documentManager->getClassMetadata($className);
+        $embeddedDocument = $embeddedMetadata->newInstance();
+
+        $this->documentManager->getUnitOfWork()->setParentAssociation($embeddedDocument, $mapping, $document, '%1$s');
+
+        $embeddedData = $this->hydratorFactory->hydrate($embeddedDocument, $value, $hints);
+        $embeddedId   = $embeddedMetadata->identifier && isset($embeddedData[$embeddedMetadata->identifier]) ? $embeddedData[$embeddedMetadata->identifier] : null;
+
+        // TODO: extract; this shouldn't really be responsibility of the hydrator
+        if (empty($hints[Query::HINT_READ_ONLY])) {
+            $this->documentManager->getUnitOfWork()->registerManaged($embeddedDocument, $embeddedId, $embeddedData);
+        }
+
+        return $embeddedDocument;
+    }
+
+    private function hydrateInverseReferenceOne(object $document, string $fieldName, mixed $identifier, array $mapping): object|null
+    {
+        $fieldMapping = $this->classMetadata->fieldMappings[$fieldName];
+        $className    = $fieldMapping['targetDocument'];
+
+        if (isset($mapping['repositoryMethod']) && $mapping['repositoryMethod']) {
+            $repository = $this->documentManager->getRepository($className);
+
+            return call_user_func([$repository, $mapping['repositoryMethod']], $document);
+        }
+
+        $targetClass       = $this->documentManager->getClassMetadata($className);
+        $mappedByMapping   = $targetClass->fieldMappings[$mapping['mappedBy']];
+        $mappedByFieldName = ClassMetadata::getReferenceFieldName($mappedByMapping['storeAs'], $mapping['mappedBy']);
+
+        return $this->documentManager->getUnitOfWork()->getDocumentPersister($className)->load(
+            array_merge(
+                [$mappedByFieldName => $identifier],
+                $fieldMapping['criteria'] ?? [],
+            ),
+            null,
+            [],
+            0,
+            $fieldMapping['sort'] ?? [],
+        );
+    }
+
+    private function hydrateReferenceOne(object $document, string $fieldName, mixed $value, array $mapping): object|null
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($mapping['storeAs'] !== ClassMetadata::REFERENCE_STORE_AS_ID && ! $value instanceof Document) {
+            throw HydratorException::associationTypeMismatch($document::class, $fieldName, Document::class, gettype($value));
+        }
+
+        $className      = $this->documentManager->getClassNameForAssociation($mapping, $value);
+        $identifier     = ClassMetadata::getReferenceId($value, $mapping['storeAs']);
+        $targetMetadata = $this->documentManager->getClassMetadata($className);
+        $id             = $targetMetadata->getPHPIdentifierValue($identifier);
+
+        return $this->documentManager->getReference($className, $id);
     }
 }
