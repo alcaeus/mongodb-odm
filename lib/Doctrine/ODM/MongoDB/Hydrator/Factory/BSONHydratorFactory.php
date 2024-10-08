@@ -9,6 +9,7 @@ use Doctrine\ODM\MongoDB\Hydrator\BSONHydrator;
 use Doctrine\ODM\MongoDB\Hydrator\Factory;
 use Doctrine\ODM\MongoDB\Hydrator\TypeMapHydrator;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionFactory;
+use Doctrine\ODM\MongoDB\Utility\LifecycleEventManager;
 
 final class BSONHydratorFactory implements Factory, TypeMapHydrator
 {
@@ -54,6 +55,7 @@ final class BSONHydratorFactory implements Factory, TypeMapHydrator
             $this->documentManager,
             $this->documentManager->getClassMetadata($className),
             $this,
+            new LifecycleEventManager($this->documentManager, $this->documentManager->getEventManager()),
             $this->collectionFactory,
         );
     }

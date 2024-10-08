@@ -9,6 +9,7 @@ use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionFactory;
 use Doctrine\ODM\MongoDB\Query\Query;
 use Doctrine\ODM\MongoDB\Types\Type;
+use Doctrine\ODM\MongoDB\Utility\LifecycleEventManager;
 use MongoDB\BSON\Document;
 use MongoDB\BSON\PackedArray;
 use ProxyManager\Proxy\GhostObjectInterface;
@@ -26,6 +27,7 @@ final class BSONHydrator implements TypeMapHydrator
         private readonly DocumentManager $documentManager,
         private readonly ClassMetadata $classMetadata,
         private readonly Factory $hydratorFactory,
+        private readonly LifecycleEventManager $eventManager,
         private readonly PersistentCollectionFactory $collectionFactory,
     ) {
         $this->fallbackType = Type::getType('raw');
@@ -33,7 +35,9 @@ final class BSONHydrator implements TypeMapHydrator
 
     public function hydrate(object $document, ?Document $data, array $hints = []): array
     {
-        // TODO: Events
+        // TODO: Events handlers are currently not able to change data
+        $this->eventManager->preLoad($this->classMetadata, $document, $data);
+
         $hydratedData = [];
 
         if ($document instanceof GhostObjectInterface && $document->getProxyInitializer() !== null) {
@@ -79,6 +83,8 @@ final class BSONHydrator implements TypeMapHydrator
             $this->classMetadata->reflFields[$fieldName]->setValue($document, $fieldValue);
             $hydratedData[$fieldName] = $fieldValue;
         }
+
+        $this->eventManager->postLoad($this->classMetadata, $document);
 
         return $hydratedData;
     }
