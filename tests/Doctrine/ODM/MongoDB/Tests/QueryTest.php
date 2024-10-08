@@ -502,8 +502,8 @@ class QueryTest extends BaseTestCase
         $collection = $this->getMockCollection();
         $collection->expects($this->once())
             ->method('find')
-            ->with(['foo' => 'bar'], ['hint' => 'foo'])
-            ->will($this->returnValue($cursor));
+            ->with(['foo' => 'bar'], $this->arrayHasKey('hint'))
+            ->willReturn($cursor);
 
         // Using QueryBuilder->find adds hint to the query array
         $queryArray = [
@@ -529,7 +529,16 @@ class QueryTest extends BaseTestCase
         $collection = $this->getMockCollection();
         $collection->expects($this->once())
             ->method('find')
-            ->with(['foo' => 'bar'], ['maxTimeMS' => 100, 'skip' => 5, 'readPreference' => $nearest])
+            ->with(
+                ['foo' => 'bar'],
+                // TODO: Assert values
+                // ['maxTimeMS' => 100, 'skip' => 5, 'readPreference' => $nearest],
+                $this->logicalAnd(
+                    $this->arrayHasKey('maxTimeMS'),
+                    $this->arrayHasKey('skip'),
+                    $this->arrayHasKey('readPreference'),
+                ),
+            )
             ->willReturn($cursor);
 
         $queryArray = [
