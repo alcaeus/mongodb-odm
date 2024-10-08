@@ -242,14 +242,10 @@ class GH453Test extends BaseTestCase
     /** @param mixed $documentId */
     private function assertBsonType(int $bsonType, $documentId, string $fieldName): void
     {
-        $criteria = ['_id' => $documentId];
-
-        if ($bsonType === 4) {
-            // See: https://jira.mongodb.org/browse/SERVER-1475
-            $criteria['$where'] = sprintf('Array.isArray(this.%s)', $fieldName);
-        } else {
-            $criteria[$fieldName] = ['$type' => $bsonType];
-        }
+        $criteria = [
+            '_id' => $documentId,
+            $fieldName => ['$type' => $bsonType],
+        ];
 
         self::assertNotNull($this->dm->getRepository(GH453Document::class)->findOneBy($criteria));
     }
