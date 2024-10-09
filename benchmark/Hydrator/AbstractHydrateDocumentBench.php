@@ -27,13 +27,8 @@ abstract class AbstractHydrateDocumentBench extends BaseBench
 {
     protected static array $dataset;
 
-    protected static Document $data;
-    protected static Document $dataWithEmbedOne;
-    protected static Document $dataWithEmbedMany;
-    protected static Document $dataWithReferenceOne;
-    protected static Document $dataWithReferenceMany;
-
-    protected static HydratorInterface $hydrator;
+    /** @var array<string, HydratorInterface> */
+    protected static array $hydrators;
 
     abstract protected function useBSONHydrator(): bool;
 
@@ -78,44 +73,38 @@ abstract class AbstractHydrateDocumentBench extends BaseBench
             ],
         ];
 
-        static::$data                  = Document::fromPHP($data);
-        static::$dataWithEmbedOne      = Document::fromPHP($data + $embedOneData);
-        static::$dataWithEmbedMany     = Document::fromPHP($data + $embedManyData);
-        static::$dataWithReferenceOne  = Document::fromPHP($data + $referenceOneData);
-        static::$dataWithReferenceMany = Document::fromPHP($data + $referenceManyData);
-
         static::$dataset = static::prepareDataset([
-            'data' => static::$data,
-            'embedOne' => static::$dataWithEmbedOne,
-            'embedMany' => static::$dataWithEmbedMany,
-            'referenceOne' => static::$dataWithReferenceOne,
-            'referenceMany' => static::$dataWithReferenceMany,
+            'userData' => Document::fromPHP($data),
+            'userEmbedOne' => Document::fromPHP($data + $embedOneData),
+            'userEmbedMany' => Document::fromPHP($data + $embedManyData),
+            'userReferenceOne' => Document::fromPHP($data + $referenceOneData),
+            'userReferenceMany' => Document::fromPHP($data + $referenceManyData),
         ]);
     }
 
     public function benchHydrateDocument(): void
     {
-        $this->getHydrator()->hydrate(new User(), $this->getData('data'));
+        $this->getHydrator(User::class)->hydrate(new User(), $this->getData('userData'));
     }
 
     public function benchHydrateDocumentWithEmbedOne(): void
     {
-        $this->getHydrator()->hydrate(new User(), $this->getData('embedOne'));
+        $this->getHydrator(User::class)->hydrate(new User(), $this->getData('userEmbedOne'));
     }
 
     public function benchHydrateDocumentWithEmbedMany(): void
     {
-        $this->getHydrator()->hydrate(new User(), $this->getData('embedMany'));
+        $this->getHydrator(User::class)->hydrate(new User(), $this->getData('userEmbedMany'));
     }
 
     public function benchHydrateDocumentWithReferenceOne(): void
     {
-        $this->getHydrator()->hydrate(new User(), $this->getData('referenceOne'));
+        $this->getHydrator(User::class)->hydrate(new User(), $this->getData('userReferenceOne'));
     }
 
     public function benchHydrateDocumentWithReferenceMany(): void
     {
-        $this->getHydrator()->hydrate(new User(), $this->getData('referenceMany'));
+        $this->getHydrator(User::class)->hydrate(new User(), $this->getData('userReferenceMany'));
     }
 
     protected function createDocumentManagerConfiguration(): Configuration
@@ -131,10 +120,10 @@ abstract class AbstractHydrateDocumentBench extends BaseBench
         return static::$dataset[$dataset] ?? throw new InvalidArgumentException(sprintf('Invalid dataset "%s" requested', $dataset));
     }
 
-    private function getHydrator(): HydratorInterface
+    private function getHydrator(string $className): HydratorInterface
     {
-        return static::$hydrator ??= static::getDocumentManager()
+        return static::$hydrators[$className] ??= static::getDocumentManager()
             ->getHydratorFactory()
-            ->getHydratorFor(User::class);
+            ->getHydratorFor($className);
     }
 }
