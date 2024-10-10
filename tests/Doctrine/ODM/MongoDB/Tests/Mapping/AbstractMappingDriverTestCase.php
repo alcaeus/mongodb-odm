@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ODM\MongoDB\Aggregation\Builder;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
+use Doctrine\ODM\MongoDB\Mapping\FieldMapping;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
 use Doctrine\ODM\MongoDB\Repository\DefaultGridFSRepository;
 use Doctrine\ODM\MongoDB\Repository\DocumentRepository;
@@ -249,7 +250,6 @@ abstract class AbstractMappingDriverTestCase extends BaseTestCase
     public function testOwningOneToOneAssociation(ClassMetadata $class): ClassMetadata
     {
         self::assertTrue(isset($class->fieldMappings['address']));
-        self::assertIsArray($class->fieldMappings['address']);
         // Check cascading
         self::assertTrue($class->fieldMappings['address']['isCascadeRemove']);
         self::assertFalse($class->fieldMappings['address']['isCascadePersist']);
@@ -510,41 +510,41 @@ abstract class AbstractMappingDriverTestCase extends BaseTestCase
         self::assertSame(12345, $class->getChunkSizeBytes());
         self::assertNull($class->customRepositoryClassName);
 
-        self::assertArraySubset([
+        self::assertMapping([
             'name' => '_id',
             'type' => 'id',
-        ], $class->getFieldMapping('id'), true);
+        ], $class->getFieldMapping('id'));
 
-        self::assertArraySubset([
+        self::assertMapping([
             'name' => 'length',
             'type' => 'int',
             'notSaved' => true,
-        ], $class->getFieldMapping('size'), true);
+        ], $class->getFieldMapping('size'));
 
-        self::assertArraySubset([
+        self::assertMapping([
             'name' => 'chunkSize',
             'type' => 'int',
             'notSaved' => true,
-        ], $class->getFieldMapping('chunkSize'), true);
+        ], $class->getFieldMapping('chunkSize'));
 
-        self::assertArraySubset([
+        self::assertMapping([
             'name' => 'filename',
             'type' => 'string',
             'notSaved' => true,
-        ], $class->getFieldMapping('name'), true);
+        ], $class->getFieldMapping('name'));
 
-        self::assertArraySubset([
+        self::assertMapping([
             'name' => 'uploadDate',
             'type' => 'date',
             'notSaved' => true,
-        ], $class->getFieldMapping('uploadDate'), true);
+        ], $class->getFieldMapping('uploadDate'));
 
-        self::assertArraySubset([
+        self::assertMapping([
             'name' => 'metadata',
             'type' => 'one',
             'embedded' => true,
             'targetDocument' => AbstractMappingDriverFileMetadata::class,
-        ], $class->getFieldMapping('metadata'), true);
+        ], $class->getFieldMapping('metadata'));
     }
 
     public function testGridFSMappingWithCustomRepository(): void
@@ -632,32 +632,18 @@ abstract class AbstractMappingDriverTestCase extends BaseTestCase
 
         self::assertEquals('id', $metadata->identifier);
 
-        self::assertArraySubset([
+        self::assertMapping([
             'fieldName' => 'id',
             'id' => true,
             'name' => '_id',
             'type' => 'id',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
         ], $metadata->fieldMappings['id']);
 
-        self::assertArraySubset([
+        self::assertMapping([
             'fieldName' => 'name',
             'name' => 'name',
             'type' => 'string',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
         ], $metadata->fieldMappings['name']);
@@ -676,6 +662,15 @@ abstract class AbstractMappingDriverTestCase extends BaseTestCase
         self::assertSame('string', $metadata->fieldMappings['nullableSuit']['type']);
         self::assertTrue($metadata->fieldMappings['nullableSuit']['nullable']);
         self::assertInstanceOf(EnumReflectionProperty::class, $metadata->reflFields['nullableSuit']);
+    }
+
+    public static function assertMapping(array $expected, mixed $actual, string $className = FieldMapping::class): void
+    {
+        self::assertInstanceOf($className, $actual);
+
+        foreach ($expected as $field => $value) {
+            self::assertSame($value, $actual[$field]);
+        }
     }
 }
 

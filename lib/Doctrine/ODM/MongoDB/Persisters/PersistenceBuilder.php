@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Doctrine\ODM\MongoDB\Persisters;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Doctrine\ODM\MongoDB\Mapping\AssociationMapping;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
+use Doctrine\ODM\MongoDB\Mapping\EmbedManyMapping;
+use Doctrine\ODM\MongoDB\Mapping\EmbedMapping;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceManyMapping;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceMapping;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionInterface;
 use Doctrine\ODM\MongoDB\Types\Incrementable;
 use Doctrine\ODM\MongoDB\Types\Type;
@@ -89,7 +94,7 @@ final class PersistenceBuilder
             // We're excluding collections using addToSet since there is a risk
             // of duplicated entries stored in the collection
             } elseif (
-                $mapping['type'] === ClassMetadata::MANY && ! $mapping['isInverseSide']
+                ($mapping instanceof EmbedManyMapping || ($mapping instanceof ReferenceManyMapping && ! $mapping['isInverseSide']))
                     && (! $new->isEmpty() || $mapping['storeEmptyArray'])
                     && ($mapping['strategy'] !== ClassMetadata::STORAGE_STRATEGY_ADD_TO_SET || $mapping['storeEmptyArray'])
             ) {
@@ -288,7 +293,7 @@ final class PersistenceBuilder
 
             // @ReferenceMany, @EmbedMany
             } elseif (
-                $mapping['type'] === ClassMetadata::MANY && ! $mapping['isInverseSide']
+                $mapping['type'] === ClassMetadata::MANY && ($mapping instanceof EmbedManyMapping || ! $mapping['isInverseSide'])
                     && $new instanceof PersistentCollectionInterface && $new->isDirty()
                     && CollectionHelper::isAtomic($mapping['strategy'])
             ) {
@@ -326,7 +331,7 @@ final class PersistenceBuilder
      *
      * @return array<string, mixed>|null
      */
-    public function prepareReferencedDocumentValue(array $referenceMapping, $document)
+    public function prepareReferencedDocumentValue(array|ReferenceMapping $referenceMapping, $document)
     {
         return $this->dm->createReference($document, $referenceMapping);
     }
@@ -353,7 +358,7 @@ final class PersistenceBuilder
      *
      * @throws UnexpectedValueException If an unsupported associating mapping is found.
      */
-    public function prepareEmbeddedDocumentValue(array $embeddedMapping, $embeddedDocument, $includeNestedCollections = false)
+    public function prepareEmbeddedDocumentValue(array|EmbedMapping $embeddedMapping, $embeddedDocument, $includeNestedCollections = false)
     {
         $embeddedDocumentValue = [];
         $class                 = $this->dm->getClassMetadata($embeddedDocument::class);
@@ -468,7 +473,7 @@ final class PersistenceBuilder
      *
      * @throws InvalidArgumentException If the mapping is neither embedded nor reference.
      */
-    public function prepareAssociatedDocumentValue(array $mapping, $document, $includeNestedCollections = false)
+    public function prepareAssociatedDocumentValue(array|AssociationMapping $mapping, $document, $includeNestedCollections = false)
     {
         if (isset($mapping['embedded'])) {
             return $this->prepareEmbeddedDocumentValue($mapping, $document, $includeNestedCollections);

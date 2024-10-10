@@ -106,52 +106,6 @@ use function trigger_deprecation;
  *      background?: bool,
  *      enumType?: class-string<BackedEnum>,
  * }
- * @psalm-type FieldMapping = array{
- *      type: string,
- *      fieldName: string,
- *      name: string,
- *      isCascadeRemove: bool,
- *      isCascadePersist: bool,
- *      isCascadeRefresh: bool,
- *      isCascadeMerge: bool,
- *      isCascadeDetach: bool,
- *      isOwningSide: bool,
- *      isInverseSide: bool,
- *      strategy?: string,
- *      association?: int,
- *      id?: bool,
- *      collectionClass?: class-string,
- *      cascade?: list<string>|string,
- *      embedded?: bool,
- *      orphanRemoval?: bool,
- *      options?: array<string, mixed>,
- *      nullable?: bool,
- *      reference?: bool,
- *      storeAs?: string,
- *      targetDocument?: class-string|null,
- *      mappedBy?: string|null,
- *      inversedBy?: string|null,
- *      discriminatorField?: string,
- *      defaultDiscriminatorValue?: string,
- *      discriminatorMap?: array<string, class-string>,
- *      repositoryMethod?: string|null,
- *      sort?: array<string, string|int>,
- *      limit?: int|null,
- *      skip?: int|null,
- *      version?: bool,
- *      lock?: bool,
- *      notSaved?: bool,
- *      inherited?: string,
- *      declared?: class-string,
- *      prime?: list<string>,
- *      sparse?: bool,
- *      unique?: bool,
- *      index?: bool,
- *      criteria?: array<string, mixed>,
- *      alsoLoadFields?: list<string>,
- *      enumType?: class-string<BackedEnum>,
- *      storeEmptyArray?: bool,
- * }
  * @psalm-type AssociationFieldMapping = array{
  *      type?: string,
  *      fieldName: string,
@@ -644,8 +598,7 @@ use function trigger_deprecation;
      * Marks the field as the primary key of the document. Multiple fields of an
      * document can have the id attribute, forming a composite key.
      *
-     * @var array<string, mixed>
-     * @psalm-var array<string, FieldMapping>
+     * @var array<string, FieldMapping>
      */
     public $fieldMappings = [];
 
@@ -653,8 +606,7 @@ use function trigger_deprecation;
      * READ-ONLY: The association mappings of the class.
      * Keys are field names and values are mapping definitions.
      *
-     * @var array<string, mixed>
-     * @psalm-var array<string, AssociationFieldMapping>
+     * @var array<string, AssociationMapping>
      */
     public $associationMappings = [];
 
@@ -812,6 +764,9 @@ use function trigger_deprecation;
 
     /** @var class-string|null */
     private ?string $rootClass;
+
+    /** @var array<string, true> */
+    private array $inheritedFields = [];
 
     /**
      * Initializes a new ClassMetadata instance that will hold the object-document mapping
@@ -1696,9 +1651,10 @@ use function trigger_deprecation;
      *
      * @psalm-param FieldMapping $fieldMapping
      */
-    public function addInheritedFieldMapping(array $fieldMapping): void
+    public function addInheritedFieldMapping(FieldMapping $fieldMapping): void
     {
-        $this->fieldMappings[$fieldMapping['fieldName']] = $fieldMapping;
+        $this->inheritedFields[$fieldMapping['fieldName']] = true;
+        $this->fieldMappings[$fieldMapping['fieldName']]   = $fieldMapping;
 
         if (! isset($fieldMapping['association'])) {
             return;
@@ -1713,11 +1669,9 @@ use function trigger_deprecation;
      *
      * @internal
      *
-     * @psalm-param AssociationFieldMapping $mapping
-     *
      * @throws MappingException
      */
-    public function addInheritedAssociationMapping(array $mapping): void
+    public function addInheritedAssociationMapping(AssociationMapping $mapping): void
     {
         $this->associationMappings[$mapping['fieldName']] = $mapping;
     }
@@ -1928,7 +1882,7 @@ use function trigger_deprecation;
      *
      * @throws MappingException If the $fieldName is not found in the fieldMappings array.
      */
-    public function getFieldMapping(string $fieldName): array
+    public function getFieldMapping(string $fieldName): array|FieldMapping
     {
         if (! isset($this->fieldMappings[$fieldName])) {
             throw MappingException::mappingNotFound($this->name, $fieldName);
@@ -1958,7 +1912,7 @@ use function trigger_deprecation;
      *
      * @throws MappingException
      */
-    public function getFieldMappingByDbFieldName(string $dbFieldName): array
+    public function getFieldMappingByDbFieldName(string $dbFieldName): array|FieldMapping
     {
         foreach ($this->fieldMappings as $mapping) {
             if ($mapping['name'] === $dbFieldName) {
@@ -2227,7 +2181,7 @@ use function trigger_deprecation;
             throw new InvalidArgumentException("Association name expected, '" . $assocName . "' is not an association.");
         }
 
-        if (! array_key_exists('collectionClass', $this->associationMappings[$assocName])) {
+        if (! isset($this->associationMappings[$assocName]['collectionClass'])) {
             throw new InvalidArgumentException("collectionClass can only be applied to 'embedMany' and 'referenceMany' associations.");
         }
 
@@ -2480,9 +2434,11 @@ use function trigger_deprecation;
             );
         }
 
-        $this->fieldMappings[$mapping['fieldName']] = $mapping;
+        $fieldMapping                               = FieldMapping::fromMappingArray($mapping);
+        $this->fieldMappings[$mapping['fieldName']] = $fieldMapping;
+
         if (isset($mapping['association'])) {
-            $this->associationMappings[$mapping['fieldName']] = $mapping;
+            $this->associationMappings[$mapping['fieldName']] = $fieldMapping;
         }
 
         $reflProp = $this->reflectionService->getAccessibleProperty($this->name, $mapping['fieldName']);

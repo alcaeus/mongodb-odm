@@ -422,6 +422,8 @@ class ReferencePrimerTest extends BaseTestCase
         $this->dm->flush();
 
         $groupDBRef = $this->dm->createReference($group, ClassMetadataTestUtil::getFieldMapping([
+            'reference' => true,
+            'type' => 'one',
             'storeAs' => ClassMetadata::REFERENCE_STORE_AS_DB_REF,
             'targetDocument' => Group::class,
         ]));

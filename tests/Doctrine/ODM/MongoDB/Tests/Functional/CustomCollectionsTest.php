@@ -58,7 +58,7 @@ class CustomCollectionsTest extends BaseTestCase
         $coll  = new MyEmbedsCollection();
         $pcoll = $this->dm->getConfiguration()->getPersistentCollectionFactory()->create(
             $this->dm,
-            ClassMetadataTestUtil::getFieldMapping(['collectionClass' => MyEmbedsCollection::class]),
+            ClassMetadataTestUtil::getFieldMapping(['reference' => true, 'type' => 'many', 'collectionClass' => MyEmbedsCollection::class]),
             $coll,
         );
         self::assertInstanceOf(PersistentCollectionInterface::class, $pcoll);

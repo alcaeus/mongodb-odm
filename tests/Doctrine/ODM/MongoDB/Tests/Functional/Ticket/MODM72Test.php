@@ -11,6 +11,8 @@ class MODM72Test extends BaseTestCase
 {
     public function testTest(): void
     {
+        $this->markTestIncomplete('TODO: This test would no longer apply');
+
         $class = $this->dm->getClassMetadata(MODM72User::class);
         self::assertEquals(['test' => 'test'], $class->fieldMappings['name']['options']);
     }

@@ -8,6 +8,7 @@ use Doctrine\Common\EventSubscriber;
 use Doctrine\ODM\MongoDB\Event\LoadClassMetadataEventArgs;
 use Doctrine\ODM\MongoDB\Event\OnClassMetadataNotFoundEventArgs;
 use Doctrine\ODM\MongoDB\Events;
+use Doctrine\ODM\MongoDB\Mapping\AssociationMapping;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 
 use function array_key_exists;
@@ -90,7 +91,7 @@ class ResolveTargetDocumentListener implements EventSubscriber
      * @param ClassMetadata<object> $classMetadata
      * @psalm-param AssociationFieldMapping $mapping
      */
-    private function remapAssociation(ClassMetadata $classMetadata, array $mapping): void
+    private function remapAssociation(ClassMetadata $classMetadata, array|AssociationMapping $mapping): void
     {
         $newMapping              = $this->resolveTargetDocuments[$mapping['targetDocument']];
         $newMapping              = array_replace_recursive($mapping, $newMapping);

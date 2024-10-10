@@ -6,9 +6,11 @@ namespace Doctrine\ODM\MongoDB;
 
 use Doctrine\Common\EventManager;
 use Doctrine\ODM\MongoDB\Hydrator\HydratorFactory;
+use Doctrine\ODM\MongoDB\Mapping\AssociationMapping;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadataFactoryInterface;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceMapping;
 use Doctrine\ODM\MongoDB\Proxy\Factory\ProxyFactory;
 use Doctrine\ODM\MongoDB\Proxy\Factory\StaticProxyFactory;
 use Doctrine\ODM\MongoDB\Proxy\Resolver\CachingClassNameResolver;
@@ -752,7 +754,7 @@ class DocumentManager implements ObjectManager
      * @throws MappingException
      * @throws RuntimeException
      */
-    public function createReference(object $document, array $referenceMapping)
+    public function createReference(object $document, array|ReferenceMapping $referenceMapping)
     {
         $class = $this->getClassMetadata($document::class);
         $id    = $this->unitOfWork->getDocumentIdentifier($document);
@@ -810,7 +812,7 @@ class DocumentManager implements ObjectManager
      *
      * @throws MappingException When discriminator map is present and reference class in not registered in it.
      */
-    private function getDiscriminatorData(array $referenceMapping, ClassMetadata $class): array
+    private function getDiscriminatorData(array|AssociationMapping $referenceMapping, ClassMetadata $class): array
     {
         $discriminatorField = null;
         $discriminatorValue = null;
@@ -894,7 +896,7 @@ class DocumentManager implements ObjectManager
      *
      * @psalm-return class-string
      */
-    public function getClassNameForAssociation(array $mapping, $data): string
+    public function getClassNameForAssociation(array|AssociationMapping $mapping, $data): string
     {
         $discriminatorField = $mapping['discriminatorField'] ?? null;
 

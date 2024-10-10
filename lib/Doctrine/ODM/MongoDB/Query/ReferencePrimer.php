@@ -7,6 +7,7 @@ namespace Doctrine\ODM\MongoDB\Query;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Iterator\Iterator;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
+use Doctrine\ODM\MongoDB\Mapping\FieldMapping;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionInterface;
 use Doctrine\ODM\MongoDB\UnitOfWork;
 use InvalidArgumentException;
@@ -142,7 +143,7 @@ final class ReferencePrimer
      *
      * @return array{fieldName: string, class: ClassMetadata<object>, documents: array<object>|Traversable<object>, mapping: FieldMapping}
      */
-    private function parseDotSyntaxForPrimer(string $fieldName, ClassMetadata $class, $documents, ?array $mapping = null): array
+    private function parseDotSyntaxForPrimer(string $fieldName, ClassMetadata $class, $documents, array|FieldMapping|null $mapping = null): array
     {
         // Recursion passthrough:
         if ($mapping !== null) {

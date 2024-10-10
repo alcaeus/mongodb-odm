@@ -8,6 +8,7 @@ use BadMethodCallException;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceMapping;
 use GeoJson\Geometry\Geometry;
 use GeoJson\Geometry\Point;
 use InvalidArgumentException;
@@ -1350,7 +1351,7 @@ class Expr
      *
      * @throws MappingException
      */
-    private function getReferenceMapping(): array
+    private function getReferenceMapping(): array|ReferenceMapping
     {
         $this->requiresCurrentField(__METHOD__);
         assert($this->currentField !== null);

@@ -17,6 +17,7 @@ use Doctrine\ODM\MongoDB\Iterator\PrimingIterator;
 use Doctrine\ODM\MongoDB\LockException;
 use Doctrine\ODM\MongoDB\LockMode;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceMapping;
 use Doctrine\ODM\MongoDB\MongoDBException;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionException;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionInterface;
@@ -1612,7 +1613,7 @@ final class DocumentPersister
      *     string|ObjectId|array<string, mixed>
      * }>
      */
-    private function prepareReference(string $fieldName, object $value, array $mapping, bool $inNewObj): array
+    private function prepareReference(string $fieldName, object $value, array|ReferenceMapping $mapping, bool $inNewObj): array
     {
         $reference = $this->dm->createReference($value, $mapping);
         if ($inNewObj || $mapping['storeAs'] === ClassMetadata::REFERENCE_STORE_AS_ID) {

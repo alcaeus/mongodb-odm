@@ -153,9 +153,9 @@ class UnitOfWorkTest extends BaseTestCase
         $c = new ParentAssociationTest('c');
         $d = new ParentAssociationTest('c');
 
-        $this->uow->setParentAssociation($b, ClassMetadataTestUtil::getFieldMapping(['name' => 'b']), $a, 'b');
-        $this->uow->setParentAssociation($c, ClassMetadataTestUtil::getFieldMapping(['name' => 'c']), $b, 'b.c');
-        $mappingD = ClassMetadataTestUtil::getFieldMapping(['name' => 'c']);
+        $this->uow->setParentAssociation($b, ClassMetadataTestUtil::getFieldMapping(['reference' => true, 'type' => 'one', 'name' => 'b']), $a, 'b');
+        $this->uow->setParentAssociation($c, ClassMetadataTestUtil::getFieldMapping(['reference' => true, 'type' => 'one', 'name' => 'c']), $b, 'b.c');
+        $mappingD = ClassMetadataTestUtil::getFieldMapping(['reference' => true, 'type' => 'one', 'name' => 'c']);
         $this->uow->setParentAssociation($d, $mappingD, $c, 'b.c.d');
 
         self::assertEquals([$mappingD, $c, 'b.c.d'], $this->uow->getParentAssociation($d));

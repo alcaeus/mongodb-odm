@@ -181,6 +181,8 @@ class DocumentManagerTest extends BaseTestCase
         $this->dm->persist($phonenumber);
 
         $dbRef = $this->dm->createReference($phonenumber, ClassMetadataTestUtil::getFieldMapping([
+            'reference' => true,
+            'type' => 'one',
             'storeAs' => ClassMetadata::REFERENCE_STORE_AS_DB_REF,
             'targetDocument' => CmsPhonenumber::class,
         ]));
@@ -234,6 +236,8 @@ class DocumentManagerTest extends BaseTestCase
     public function testGetClassNameForAssociation(): void
     {
         $mapping = ClassMetadataTestUtil::getFieldMapping([
+            'reference' => true,
+            'type' => 'one',
             'discriminatorField' => 'type',
             'discriminatorMap' => ['forum_user' => ForumUser::class],
             'targetDocument' => User::class,
@@ -245,7 +249,7 @@ class DocumentManagerTest extends BaseTestCase
 
     public function testGetClassNameForAssociationWithClassMetadataDiscriminatorMap(): void
     {
-        $mapping = ClassMetadataTestUtil::getFieldMapping(['targetDocument' => User::class]);
+        $mapping = ClassMetadataTestUtil::getFieldMapping(['reference' => true, 'type' => 'one', 'targetDocument' => User::class]);
         $data    = ['type' => 'forum_user'];
 
         $userClassMetadata                     = new ClassMetadata(ForumUser::class);
@@ -258,7 +262,7 @@ class DocumentManagerTest extends BaseTestCase
 
     public function testGetClassNameForAssociationReturnsTargetDocumentWithNullData(): void
     {
-        $mapping = ClassMetadataTestUtil::getFieldMapping(['targetDocument' => User::class]);
+        $mapping = ClassMetadataTestUtil::getFieldMapping(['embedded' => true, 'type' => 'one', 'targetDocument' => User::class]);
         self::assertEquals(User::class, $this->dm->getClassNameForAssociation($mapping, null));
     }
 }

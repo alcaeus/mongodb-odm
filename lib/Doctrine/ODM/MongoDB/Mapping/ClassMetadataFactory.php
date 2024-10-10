@@ -308,16 +308,11 @@ final class ClassMetadataFactory extends AbstractClassMetadataFactory implements
      */
     private function addInheritedFields(ClassMetadata $subClass, ClassMetadata $parentClass): void
     {
-        foreach ($parentClass->fieldMappings as $fieldName => $mapping) {
-            if (! isset($mapping['inherited']) && ! $parentClass->isMappedSuperclass) {
-                $mapping['inherited'] = $parentClass->name;
-            }
+        foreach ($parentClass->fieldMappings as $mapping) {
+            $declaringClass = $mapping['declared'] ?? $parentClass->name;
+            $inheritedFrom  = $mapping['inherited'] ?? ($parentClass->isMappedSuperclass) ? null : $parentClass->name;
 
-            if (! isset($mapping['declared'])) {
-                $mapping['declared'] = $parentClass->name;
-            }
-
-            $subClass->addInheritedFieldMapping($mapping);
+            $subClass->addInheritedFieldMapping($mapping->inherit($declaringClass, $inheritedFrom));
         }
 
         foreach ($parentClass->reflFields as $name => $field) {
@@ -332,20 +327,11 @@ final class ClassMetadataFactory extends AbstractClassMetadataFactory implements
      */
     private function addInheritedRelations(ClassMetadata $subClass, ClassMetadata $parentClass): void
     {
-        foreach ($parentClass->associationMappings as $field => $mapping) {
-            if ($parentClass->isMappedSuperclass) {
-                $mapping['sourceDocument'] = $subClass->name;
-            }
+        foreach ($parentClass->associationMappings as $mapping) {
+            $declaringClass = $mapping['declared'] ?? $parentClass->name;
+            $inheritedFrom  = $mapping['inherited'] ?? ($parentClass->isMappedSuperclass) ? null : $parentClass->name;
 
-            if (! isset($mapping['inherited']) && ! $parentClass->isMappedSuperclass) {
-                $mapping['inherited'] = $parentClass->name;
-            }
-
-            if (! isset($mapping['declared'])) {
-                $mapping['declared'] = $parentClass->name;
-            }
-
-            $subClass->addInheritedAssociationMapping($mapping);
+            $subClass->addInheritedAssociationMapping($mapping->inherit($declaringClass, $inheritedFrom));
         }
     }
 

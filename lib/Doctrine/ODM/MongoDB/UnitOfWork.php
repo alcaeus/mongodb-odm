@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\EventManager;
 use Doctrine\ODM\MongoDB\Hydrator\HydratorFactory;
+use Doctrine\ODM\MongoDB\Mapping\AssociationMapping;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionException;
@@ -323,7 +324,7 @@ final class UnitOfWork implements PropertyChangedListener
      *
      * @psalm-param FieldMapping $mapping
      */
-    public function setParentAssociation(object $document, array $mapping, ?object $parent, string $propertyPath): void
+    public function setParentAssociation(object $document, array|AssociationMapping $mapping, ?object $parent, string $propertyPath): void
     {
         $oid                                   = spl_object_hash($document);
         $this->embeddedDocumentsRegistry[$oid] = $document;
@@ -965,7 +966,7 @@ final class UnitOfWork implements PropertyChangedListener
      *
      * @throws InvalidArgumentException
      */
-    private function computeAssociationChanges(object $parentDocument, array $assoc, $value): void
+    private function computeAssociationChanges(object $parentDocument, AssociationMapping $assoc, $value): void
     {
         $isNewParentDocument   = isset($this->scheduledDocumentInsertions[spl_object_hash($parentDocument)]);
         $class                 = $this->dm->getClassMetadata($parentDocument::class);
@@ -975,7 +976,7 @@ final class UnitOfWork implements PropertyChangedListener
             return;
         }
 
-        if ($value instanceof PersistentCollectionInterface && $value->isDirty() && $value->getOwner() !== null && ($assoc['isOwningSide'] || isset($assoc['embedded']))) {
+        if ($value instanceof PersistentCollectionInterface && $value->isDirty() && $value->getOwner() !== null && (isset($assoc['embedded']) || $assoc['isOwningSide'])) {
             if ($topOrExistingDocument || CollectionHelper::usesSet($assoc['strategy'])) {
                 $this->scheduleCollectionUpdate($value);
             }
@@ -1881,7 +1882,7 @@ final class UnitOfWork implements PropertyChangedListener
      *                       version attribute and the version check against the
      *                       managed copy fails.
      */
-    private function doMerge(object $document, array &$visited, ?object $prevManagedCopy = null, ?array $assoc = null): object
+    private function doMerge(object $document, array &$visited, ?object $prevManagedCopy = null, array|AssociationMapping|null $assoc = null): object
     {
         $oid = spl_object_hash($document);
 
@@ -2171,12 +2172,12 @@ final class UnitOfWork implements PropertyChangedListener
     {
         $class = $this->dm->getClassMetadata($document::class);
 
-        $associationMappings = array_filter(
+        $cascadeRefreshAssociations = array_filter(
             $class->associationMappings,
-            static fn ($assoc) => $assoc['isCascadeRefresh'],
+            static fn (AssociationMapping $assoc): bool => $assoc['isCascadeRefresh'],
         );
 
-        foreach ($associationMappings as $mapping) {
+        foreach ($cascadeRefreshAssociations as $mapping) {
             $relatedDocuments = $class->reflFields[$mapping['fieldName']]->getValue($document);
             if ($relatedDocuments instanceof Collection || is_array($relatedDocuments)) {
                 if ($relatedDocuments instanceof PersistentCollectionInterface) {
@@ -2201,11 +2202,13 @@ final class UnitOfWork implements PropertyChangedListener
     private function cascadeDetach(object $document, array &$visited): void
     {
         $class = $this->dm->getClassMetadata($document::class);
-        foreach ($class->fieldMappings as $mapping) {
-            if (! $mapping['isCascadeDetach']) {
-                continue;
-            }
 
+        $cascadeDetachAssociations = array_filter(
+            $class->associationMappings,
+            static fn (AssociationMapping $assoc): bool => $assoc['isCascadeDetach'],
+        );
+
+        foreach ($cascadeDetachAssociations as $mapping) {
             $relatedDocuments = $class->reflFields[$mapping['fieldName']]->getValue($document);
             if ($relatedDocuments instanceof Collection || is_array($relatedDocuments)) {
                 if ($relatedDocuments instanceof PersistentCollectionInterface) {
@@ -2231,12 +2234,12 @@ final class UnitOfWork implements PropertyChangedListener
     {
         $class = $this->dm->getClassMetadata($document::class);
 
-        $associationMappings = array_filter(
+        $cascadeMergeAssociations = array_filter(
             $class->associationMappings,
-            static fn ($assoc) => $assoc['isCascadeMerge'],
+            static fn (AssociationMapping $assoc): bool => $assoc['isCascadeMerge'],
         );
 
-        foreach ($associationMappings as $assoc) {
+        foreach ($cascadeMergeAssociations as $assoc) {
             $relatedDocuments = $class->reflFields[$assoc['fieldName']]->getValue($document);
 
             if ($relatedDocuments instanceof Collection || is_array($relatedDocuments)) {
@@ -2263,12 +2266,12 @@ final class UnitOfWork implements PropertyChangedListener
     {
         $class = $this->dm->getClassMetadata($document::class);
 
-        $associationMappings = array_filter(
+        $cascadePersistAssociations = array_filter(
             $class->associationMappings,
-            static fn ($assoc) => $assoc['isCascadePersist'],
+            static fn (AssociationMapping $assoc): bool => $assoc['isCascadePersist'],
         );
 
-        foreach ($associationMappings as $fieldName => $mapping) {
+        foreach ($cascadePersistAssociations as $fieldName => $mapping) {
             $relatedDocuments = $class->reflFields[$fieldName]->getValue($document);
 
             if ($relatedDocuments instanceof Collection || is_array($relatedDocuments)) {
@@ -2320,11 +2323,13 @@ final class UnitOfWork implements PropertyChangedListener
     private function cascadeRemove(object $document, array &$visited): void
     {
         $class = $this->dm->getClassMetadata($document::class);
-        foreach ($class->fieldMappings as $mapping) {
-            if (! $mapping['isCascadeRemove'] && ( ! isset($mapping['orphanRemoval']) || ! $mapping['orphanRemoval'])) {
-                continue;
-            }
 
+        $cascadeRemoveAssociations = array_filter(
+            $class->associationMappings,
+            static fn (AssociationMapping $assoc): bool => $assoc['isCascadeRemove'] || $assoc['orphanRemoval'],
+        );
+
+        foreach ($cascadeRemoveAssociations as $mapping) {
             $this->initializeObject($document);
 
             $relatedDocuments = $class->reflFields[$mapping['fieldName']]->getValue($document);

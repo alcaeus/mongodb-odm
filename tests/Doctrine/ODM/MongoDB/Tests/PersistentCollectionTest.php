@@ -44,6 +44,8 @@ class PersistentCollectionTest extends BaseTestCase
         assert($unserialized instanceof PersistentCollection);
 
         $unserialized->setOwner($owner, ClassMetadataTestUtil::getFieldMapping([
+            'reference' => true,
+            'type' => 'one',
             'targetDocument' => stdClass::class,
         ]));
         $this->expectException(MongoDBException::class);

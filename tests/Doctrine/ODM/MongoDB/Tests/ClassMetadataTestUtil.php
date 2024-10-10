@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Doctrine\ODM\MongoDB\Tests;
 
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
+use Doctrine\ODM\MongoDB\Mapping\FieldMapping;
 use Doctrine\ODM\MongoDB\Types\Type;
 
 /**
@@ -18,7 +19,7 @@ class ClassMetadataTestUtil
      *
      * @psalm-return FieldMapping
      */
-    public static function getFieldMapping(array $mapping): array
+    public static function getFieldMapping(array $mapping): FieldMapping
     {
         $defaultFieldMapping = [
             'type' => Type::STRING,
@@ -34,6 +35,6 @@ class ClassMetadataTestUtil
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
         ];
 
-        return $mapping + $defaultFieldMapping;
+        return FieldMapping::fromMappingArray($mapping + $defaultFieldMapping);
     }
 }

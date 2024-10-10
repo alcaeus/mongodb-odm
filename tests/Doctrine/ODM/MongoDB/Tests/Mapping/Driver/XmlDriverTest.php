@@ -7,6 +7,7 @@ namespace Doctrine\ODM\MongoDB\Tests\Mapping\Driver;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\Driver\XmlDriver;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
+use Doctrine\ODM\MongoDB\Tests\Mapping\AbstractMappingDriverTestCase;
 use MongoDB\BSON\Document;
 use TestDocuments\AlsoLoadDocument;
 use TestDocuments\CustomIdGenerator;
@@ -28,7 +29,7 @@ class XmlDriverTest extends AbstractDriverTestCase
     {
         $classMetadata = new ClassMetadata(UserCustomIdGenerator::class);
         $this->driver->loadMetadataForClass(UserCustomIdGenerator::class, $classMetadata);
-        self::assertEquals([
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'id',
             'strategy' => 'custom',
             'options' => [
@@ -38,13 +39,6 @@ class XmlDriverTest extends AbstractDriverTestCase
             'id' => true,
             'name' => '_id',
             'type' => 'custom_id',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
         ], $classMetadata->fieldMappings['id']);
     }
@@ -58,11 +52,11 @@ class XmlDriverTest extends AbstractDriverTestCase
         self::assertSame(ClassMetadata::REFERENCE_STORE_AS_ID, $profileMapping['storeAs']);
         self::assertTrue($profileMapping['orphanRemoval']);
 
-        $profileMapping = $classMetadata->fieldMappings['groups'];
-        self::assertSame(ClassMetadata::REFERENCE_STORE_AS_DB_REF, $profileMapping['storeAs']);
-        self::assertFalse($profileMapping['orphanRemoval']);
-        self::assertSame(0, $profileMapping['limit']);
-        self::assertSame(2, $profileMapping['skip']);
+        $groupsMapping = $classMetadata->fieldMappings['groups'];
+        self::assertSame(ClassMetadata::REFERENCE_STORE_AS_DB_REF, $groupsMapping['storeAs']);
+        self::assertFalse($groupsMapping['orphanRemoval']);
+        self::assertSame(0, $groupsMapping['limit']);
+        self::assertSame(2, $groupsMapping['skip']);
     }
 
     public function testInvalidPartialFilterExpressions(): void
@@ -93,20 +87,12 @@ class XmlDriverTest extends AbstractDriverTestCase
         $classMetadata = new ClassMetadata(AlsoLoadDocument::class);
         $this->driver->loadMetadataForClass(AlsoLoadDocument::class, $classMetadata);
 
-        self::assertEquals([
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'createdAt',
             'name' => 'createdAt',
             'type' => 'date',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
-            'also-load' => 'createdOn,creation_date',
             'alsoLoadFields' => ['createdOn', 'creation_date'],
         ], $classMetadata->fieldMappings['createdAt']);
     }

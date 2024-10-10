@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Doctrine\ODM\MongoDB\Tests\Mapping\Driver;
 
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
+use Doctrine\ODM\MongoDB\Mapping\EmbedManyMapping;
+use Doctrine\ODM\MongoDB\Mapping\EmbedOneMapping;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceManyMapping;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceOneMapping;
+use Doctrine\ODM\MongoDB\Tests\Mapping\AbstractMappingDriverTestCase;
 use Doctrine\Persistence\Mapping\Driver\MappingDriver;
 use Documents\Account;
 use Documents\Address;
@@ -39,35 +44,19 @@ abstract class AbstractDriverTestCase extends TestCase
         $classMetadata = new ClassMetadata(User::class);
         $this->driver->loadMetadataForClass(User::class, $classMetadata);
 
-        self::assertEquals([
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'id',
             'id' => true,
             'name' => '_id',
             'type' => 'id',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
         ], $classMetadata->fieldMappings['id']);
 
-        self::assertEquals([
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'username',
             'name' => 'username',
             'type' => 'string',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
-            'unique' => true,
-            'sparse' => true,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
         ], $classMetadata->fieldMappings['username']);
 
@@ -78,62 +67,38 @@ abstract class AbstractDriverTestCase extends TestCase
             ],
         ], $classMetadata->getIndexes());
 
-        self::assertEquals([
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'createdAt',
             'name' => 'createdAt',
             'type' => 'date',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
         ], $classMetadata->fieldMappings['createdAt']);
 
-        self::assertEquals([
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'tags',
             'name' => 'tags',
             'type' => 'collection',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
         ], $classMetadata->fieldMappings['tags']);
 
-        self::assertEquals([
-            'association' => 3,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'address',
             'name' => 'address',
-            'type' => 'one',
-            'embedded' => true,
             'targetDocument' => Address::class,
-            'collectionClass' => null,
             'isCascadeDetach' => true,
             'isCascadeMerge' => true,
             'isCascadePersist' => true,
             'isCascadeRefresh' => true,
             'isCascadeRemove' => true,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
-            'storeEmptyArray' => false,
-        ], $classMetadata->fieldMappings['address']);
+        ], $classMetadata->fieldMappings['address'], EmbedOneMapping::class);
 
-        self::assertEquals([
-            'association' => 4,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'phonenumbers',
             'name' => 'phonenumbers',
-            'type' => 'many',
-            'embedded' => true,
             'targetDocument' => Phonenumber::class,
             'collectionClass' => null,
             'isCascadeDetach' => true,
@@ -141,23 +106,16 @@ abstract class AbstractDriverTestCase extends TestCase
             'isCascadePersist' => true,
             'isCascadeRefresh' => true,
             'isCascadeRemove' => true,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_PUSH_ALL,
             'storeEmptyArray' => false,
-        ], $classMetadata->fieldMappings['phonenumbers']);
+        ], $classMetadata->fieldMappings['phonenumbers'], EmbedManyMapping::class);
 
-        self::assertEquals([
-            'association' => 1,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'profile',
             'name' => 'profile',
-            'type' => 'one',
-            'reference' => true,
             'storeAs' => ClassMetadata::REFERENCE_STORE_AS_ID,
             'targetDocument' => Profile::class,
-            'collectionClass' => null,
-            'cascade' => ['remove', 'persist', 'refresh', 'merge', 'detach'],
             'isCascadeDetach' => true,
             'isCascadeMerge' => true,
             'isCascadePersist' => true,
@@ -170,23 +128,15 @@ abstract class AbstractDriverTestCase extends TestCase
             'inversedBy' => null,
             'mappedBy' => null,
             'repositoryMethod' => null,
-            'limit' => null,
-            'skip' => null,
             'orphanRemoval' => true,
             'prime' => [],
-            'storeEmptyArray' => false,
-        ], $classMetadata->fieldMappings['profile']);
+        ], $classMetadata->fieldMappings['profile'], ReferenceOneMapping::class);
 
-        self::assertEquals([
-            'association' => 1,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'account',
             'name' => 'account',
-            'type' => 'one',
-            'reference' => true,
             'storeAs' => ClassMetadata::REFERENCE_STORE_AS_DB_REF,
             'targetDocument' => Account::class,
-            'collectionClass' => null,
-            'cascade' => ['remove', 'persist', 'refresh', 'merge', 'detach'],
             'isCascadeDetach' => true,
             'isCascadeMerge' => true,
             'isCascadePersist' => true,
@@ -199,23 +149,16 @@ abstract class AbstractDriverTestCase extends TestCase
             'inversedBy' => null,
             'mappedBy' => null,
             'repositoryMethod' => null,
-            'limit' => null,
-            'skip' => null,
             'orphanRemoval' => false,
             'prime' => [],
-            'storeEmptyArray' => false,
-        ], $classMetadata->fieldMappings['account']);
+        ], $classMetadata->fieldMappings['account'], ReferenceOneMapping::class);
 
-        self::assertEquals([
-            'association' => 2,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'groups',
             'name' => 'groups',
-            'type' => 'many',
-            'reference' => true,
             'storeAs' => ClassMetadata::REFERENCE_STORE_AS_DB_REF,
             'targetDocument' => Group::class,
             'collectionClass' => null,
-            'cascade' => ['remove', 'persist', 'refresh', 'merge', 'detach'],
             'isCascadeDetach' => true,
             'isCascadeMerge' => true,
             'isCascadePersist' => true,
@@ -228,12 +171,9 @@ abstract class AbstractDriverTestCase extends TestCase
             'inversedBy' => null,
             'mappedBy' => null,
             'repositoryMethod' => null,
-            'limit' => null,
-            'skip' => null,
             'orphanRemoval' => false,
-            'prime' => [],
             'storeEmptyArray' => false,
-        ], $classMetadata->fieldMappings['groups']);
+        ], $classMetadata->fieldMappings['groups'], ReferenceManyMapping::class);
 
         self::assertEquals(
             [
@@ -253,17 +193,10 @@ abstract class AbstractDriverTestCase extends TestCase
         $classMetadata = new ClassMetadata(EmbeddedDocument::class);
         $this->driver->loadMetadataForClass(EmbeddedDocument::class, $classMetadata);
 
-        self::assertEquals([
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'name',
             'name' => 'name',
             'type' => 'string',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
         ], $classMetadata->fieldMappings['name']);
@@ -271,32 +204,18 @@ abstract class AbstractDriverTestCase extends TestCase
         $classMetadata = new ClassMetadata(QueryResultDocument::class);
         $this->driver->loadMetadataForClass(QueryResultDocument::class, $classMetadata);
 
-        self::assertEquals([
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'name',
             'name' => 'name',
             'type' => 'string',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
         ], $classMetadata->fieldMappings['name']);
 
-        self::assertEquals([
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'count',
             'name' => 'count',
             'type' => 'int',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => false,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
         ], $classMetadata->fieldMappings['count']);
@@ -345,16 +264,12 @@ abstract class AbstractDriverTestCase extends TestCase
         $classMetadata = new ClassMetadata(PrimedCollectionDocument::class);
         $this->driver->loadMetadataForClass(PrimedCollectionDocument::class, $classMetadata);
 
-        self::assertEquals([
-            'association' => 2,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'references',
             'name' => 'references',
-            'type' => 'many',
-            'reference' => true,
             'storeAs' => ClassMetadata::REFERENCE_STORE_AS_DB_REF,
             'targetDocument' => PrimedCollectionDocument::class,
             'collectionClass' => null,
-            'cascade' => [],
             'isCascadeDetach' => false,
             'isCascadeMerge' => false,
             'isCascadePersist' => false,
@@ -372,18 +287,14 @@ abstract class AbstractDriverTestCase extends TestCase
             'orphanRemoval' => false,
             'prime' => [],
             'storeEmptyArray' => true,
-        ], $classMetadata->fieldMappings['references']);
+        ], $classMetadata->fieldMappings['references'], ReferenceManyMapping::class);
 
-        self::assertEquals([
-            'association' => 2,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'inverseMappedBy',
             'name' => 'inverseMappedBy',
-            'type' => 'many',
-            'reference' => true,
             'storeAs' => ClassMetadata::REFERENCE_STORE_AS_DB_REF,
             'targetDocument' => PrimedCollectionDocument::class,
             'collectionClass' => null,
-            'cascade' => [],
             'isCascadeDetach' => false,
             'isCascadeMerge' => false,
             'isCascadePersist' => false,
@@ -401,7 +312,7 @@ abstract class AbstractDriverTestCase extends TestCase
             'orphanRemoval' => false,
             'prime' => ['references'],
             'storeEmptyArray' => false,
-        ], $classMetadata->fieldMappings['inverseMappedBy']);
+        ], $classMetadata->fieldMappings['inverseMappedBy'], ReferenceManyMapping::class);
     }
 
     public function testNullableFieldsMapping(): void
@@ -409,47 +320,30 @@ abstract class AbstractDriverTestCase extends TestCase
         $classMetadata = new ClassMetadata(NullableFieldsDocument::class);
         $this->driver->loadMetadataForClass(NullableFieldsDocument::class, $classMetadata);
 
-        self::assertEquals([
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'username',
             'name' => 'username',
             'type' => 'string',
-            'isCascadeDetach' => false,
-            'isCascadeMerge' => false,
-            'isCascadePersist' => false,
-            'isCascadeRefresh' => false,
-            'isCascadeRemove' => false,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => true,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
         ], $classMetadata->fieldMappings['username']);
 
-        self::assertEquals([
-            'association' => ClassMetadata::EMBED_ONE,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'address',
             'name' => 'address',
-            'type' => ClassMetadata::ONE,
-            'embedded' => true,
             'targetDocument' => Address::class,
-            'collectionClass' => null,
             'isCascadeDetach' => true,
             'isCascadeMerge' => true,
             'isCascadePersist' => true,
             'isCascadeRefresh' => true,
             'isCascadeRemove' => true,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => true,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_SET,
-            'storeEmptyArray' => false,
-        ], $classMetadata->fieldMappings['address']);
+        ], $classMetadata->fieldMappings['address'], EmbedOneMapping::class);
 
-        self::assertEquals([
-            'association' => ClassMetadata::EMBED_MANY,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'phonenumbers',
             'name' => 'phonenumbers',
-            'type' => ClassMetadata::MANY,
-            'embedded' => true,
             'targetDocument' => Phonenumber::class,
             'collectionClass' => null,
             'isCascadeDetach' => true,
@@ -457,23 +351,16 @@ abstract class AbstractDriverTestCase extends TestCase
             'isCascadePersist' => true,
             'isCascadeRefresh' => true,
             'isCascadeRemove' => true,
-            'isInverseSide' => false,
-            'isOwningSide' => true,
             'nullable' => true,
             'strategy' => ClassMetadata::STORAGE_STRATEGY_PUSH_ALL,
             'storeEmptyArray' => false,
-        ], $classMetadata->fieldMappings['phonenumbers']);
+        ], $classMetadata->fieldMappings['phonenumbers'], EmbedManyMapping::class);
 
-        self::assertEquals([
-            'association' => ClassMetadata::REFERENCE_ONE,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'profile',
             'name' => 'profile',
-            'type' => ClassMetadata::ONE,
-            'reference' => true,
             'storeAs' => ClassMetadata::REFERENCE_STORE_AS_DB_REF,
             'targetDocument' => Profile::class,
-            'collectionClass' => null,
-            'cascade' => [],
             'isCascadeDetach' => false,
             'isCascadeMerge' => false,
             'isCascadePersist' => false,
@@ -486,23 +373,16 @@ abstract class AbstractDriverTestCase extends TestCase
             'inversedBy' => null,
             'mappedBy' => null,
             'repositoryMethod' => null,
-            'limit' => null,
-            'skip' => null,
             'orphanRemoval' => false,
             'prime' => [],
-            'storeEmptyArray' => false,
-        ], $classMetadata->fieldMappings['profile']);
+        ], $classMetadata->fieldMappings['profile'], ReferenceOneMapping::class);
 
-        self::assertEquals([
-            'association' => ClassMetadata::REFERENCE_MANY,
+        AbstractMappingDriverTestCase::assertMapping([
             'fieldName' => 'groups',
             'name' => 'groups',
-            'type' => ClassMetadata::MANY,
-            'reference' => true,
             'storeAs' => ClassMetadata::REFERENCE_STORE_AS_DB_REF,
             'targetDocument' => Group::class,
             'collectionClass' => null,
-            'cascade' => [],
             'isCascadeDetach' => false,
             'isCascadeMerge' => false,
             'isCascadePersist' => false,
@@ -520,6 +400,6 @@ abstract class AbstractDriverTestCase extends TestCase
             'orphanRemoval' => false,
             'prime' => [],
             'storeEmptyArray' => false,
-        ], $classMetadata->fieldMappings['groups']);
+        ], $classMetadata->fieldMappings['groups'], ReferenceManyMapping::class);
     }
 }

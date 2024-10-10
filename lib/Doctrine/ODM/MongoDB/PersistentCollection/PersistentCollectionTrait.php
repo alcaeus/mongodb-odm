@@ -8,7 +8,9 @@ use BadMethodCallException;
 use Closure;
 use Doctrine\Common\Collections\Collection as BaseCollection;
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Doctrine\ODM\MongoDB\Mapping\AssociationMapping;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceMapping;
 use Doctrine\ODM\MongoDB\MongoDBException;
 use Doctrine\ODM\MongoDB\UnitOfWork;
 use Doctrine\ODM\MongoDB\Utility\CollectionHelper;
@@ -48,11 +50,8 @@ trait PersistentCollectionTrait
      */
     private ?object $owner = null;
 
-    /**
-     * @var array<string, mixed>|null
-     * @psalm-var FieldMapping|null
-     */
-    private ?array $mapping = null;
+    /** @var array<string, mixed>|AssociationMapping|null */
+    private array|AssociationMapping|null $mapping = null;
 
     /**
      * Whether the collection is dirty and needs to be synchronized with the database
@@ -203,7 +202,7 @@ trait PersistentCollectionTrait
         $this->isDirty = $dirty;
     }
 
-    public function setOwner(object $document, array $mapping)
+    public function setOwner(object $document, array|AssociationMapping $mapping)
     {
         $this->owner   = $document;
         $this->mapping = $mapping;
@@ -484,7 +483,7 @@ trait PersistentCollectionTrait
         $this->coll->clear();
 
         // Nothing to do for inverse-side collections
-        if (! $this->mapping['isOwningSide']) {
+        if ($this->mapping instanceof ReferenceMapping && ! $this->mapping['isOwningSide']) {
             return;
         }
 

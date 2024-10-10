@@ -8,6 +8,8 @@ use Closure;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\LockException;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceManyMapping;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceMapping;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionInterface;
 use Doctrine\ODM\MongoDB\UnitOfWork;
 use Doctrine\ODM\MongoDB\Utility\CollectionHelper;
@@ -59,7 +61,7 @@ final class CollectionPersister
 
         foreach ($collections as $collection) {
             $mapping = $collection->getMapping();
-            if ($mapping['isInverseSide']) {
+            if ($mapping instanceof ReferenceMapping && $mapping['isInverseSide']) {
                 continue; // ignore inverse side
             }
 
@@ -113,7 +115,7 @@ final class CollectionPersister
         foreach ($collections as $coll) {
             $mapping = $coll->getMapping();
 
-            if ($mapping['isInverseSide']) {
+            if ($mapping instanceof ReferenceManyMapping && $mapping['isInverseSide']) {
                 continue; // ignore inverse side
             }
 

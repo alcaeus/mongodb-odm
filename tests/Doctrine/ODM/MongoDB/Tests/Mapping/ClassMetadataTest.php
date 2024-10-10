@@ -7,6 +7,7 @@ namespace Doctrine\ODM\MongoDB\Tests\Mapping;
 use Doctrine\ODM\MongoDB\Events;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
+use Doctrine\ODM\MongoDB\Mapping\FieldMapping;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
 use Doctrine\ODM\MongoDB\Repository\DocumentRepository;
 use Doctrine\ODM\MongoDB\Tests\BaseTestCase;
@@ -80,7 +81,7 @@ class ClassMetadataTest extends BaseTestCase
         $cm->setValidator(Document::fromJSON($validatorJson)->toPHP());
         $cm->setValidationAction(ClassMetadata::SCHEMA_VALIDATION_ACTION_WARN);
         $cm->setValidationLevel(ClassMetadata::SCHEMA_VALIDATION_LEVEL_OFF);
-        self::assertIsArray($cm->getFieldMapping('phonenumbers'));
+        self::assertInstanceOf(FieldMapping::class, $cm->getFieldMapping('phonenumbers'));
         self::assertCount(1, $cm->fieldMappings);
         self::assertCount(1, $cm->associationMappings);
 
@@ -96,7 +97,6 @@ class ClassMetadataTest extends BaseTestCase
         self::assertEquals([stdClass::class], $cm->parentClasses);
         self::assertEquals(UserRepository::class, $cm->customRepositoryClassName);
         self::assertEquals('disc', $cm->discriminatorField);
-        self::assertIsArray($cm->getFieldMapping('phonenumbers'));
         self::assertCount(1, $cm->fieldMappings);
         self::assertCount(1, $cm->associationMappings);
         self::assertEquals(['keys' => ['_id' => 1], 'options' => []], $cm->getShardKey());
@@ -288,7 +288,7 @@ class ClassMetadataTest extends BaseTestCase
         );
 
         $assoc = $cm->fieldMappings['groups'];
-        self::assertIsArray($assoc);
+        self::assertInstanceOf(FieldMapping::class, $assoc);
     }
 
     public function testGetAssociationTargetClassWithoutTargetDocument(): void
