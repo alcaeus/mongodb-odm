@@ -22,7 +22,6 @@ use Doctrine\Persistence\Mapping\ReflectionService;
 use Doctrine\Persistence\Mapping\RuntimeReflectionService;
 use Doctrine\Persistence\Reflection\EnumReflectionProperty;
 use InvalidArgumentException;
-use LogicException;
 use ProxyManager\Proxy\GhostObjectInterface;
 use ReflectionClass;
 use ReflectionEnum;
@@ -782,48 +781,6 @@ use function trigger_deprecation;
         $this->reflClass         = new ReflectionClass($documentName);
         $this->setCollection($this->reflClass->getShortName());
         $this->instantiator = new Instantiator();
-    }
-
-    /**
-     * Helper method to get reference id of ref* type references
-     *
-     * @internal
-     *
-     * @param mixed $reference
-     *
-     * @return mixed
-     */
-    public static function getReferenceId($reference, string $storeAs)
-    {
-        return $storeAs === self::REFERENCE_STORE_AS_ID ? $reference : $reference[self::getReferencePrefix($storeAs) . 'id'];
-    }
-
-    /**
-     * Returns the reference prefix used for a reference
-     */
-    private static function getReferencePrefix(string $storeAs): string
-    {
-        if (! in_array($storeAs, [self::REFERENCE_STORE_AS_REF, self::REFERENCE_STORE_AS_DB_REF, self::REFERENCE_STORE_AS_DB_REF_WITH_DB])) {
-            throw new LogicException('Can only get a reference prefix for DBRef and reference arrays');
-        }
-
-        return $storeAs === self::REFERENCE_STORE_AS_REF ? '' : '$';
-    }
-
-    /**
-     * Returns a fully qualified field name for a given reference
-     *
-     * @internal
-     *
-     * @param string $pathPrefix The field path prefix
-     */
-    public static function getReferenceFieldName(string $storeAs, string $pathPrefix = ''): string
-    {
-        if ($storeAs === self::REFERENCE_STORE_AS_ID) {
-            return $pathPrefix;
-        }
-
-        return ($pathPrefix ? $pathPrefix . '.' : '') . static::getReferencePrefix($storeAs) . 'id';
     }
 
     public function getReflectionClass(): ReflectionClass

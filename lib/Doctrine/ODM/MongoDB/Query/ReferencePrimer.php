@@ -8,6 +8,7 @@ use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Iterator\Iterator;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\FieldMapping;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceMapping;
 use Doctrine\ODM\MongoDB\PersistentCollection\PersistentCollectionInterface;
 use Doctrine\ODM\MongoDB\UnitOfWork;
 use InvalidArgumentException;
@@ -225,13 +226,15 @@ final class ReferencePrimer
         $class     = null;
         $className = null;
 
+        assert($mapping instanceof ReferenceMapping);
+
         if ($mapping['storeAs'] === ClassMetadata::REFERENCE_STORE_AS_ID) {
             $className = $mapping['targetDocument'];
             $class     = $this->dm->getClassMetadata($className);
         }
 
         foreach ($persistentCollection->getMongoData() as $reference) {
-            $id = ClassMetadata::getReferenceId($reference, $mapping['storeAs']);
+            $id = $mapping->getId($reference);
 
             if ($mapping['storeAs'] !== ClassMetadata::REFERENCE_STORE_AS_ID) {
                 $className = $this->dm->getClassNameForAssociation($mapping, $reference);

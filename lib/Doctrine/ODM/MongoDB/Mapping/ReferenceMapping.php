@@ -90,4 +90,27 @@ class ReferenceMapping extends AssociationMapping
             ? ReferenceOneMapping::fromMappingArray($mapping)
             : ReferenceManyMapping::fromMappingArray($mapping);
     }
+
+    public function getFieldName(string $pathPrefix = ''): string
+    {
+        if ($this->storeAs === ClassMetadata::REFERENCE_STORE_AS_ID) {
+            return $pathPrefix;
+        }
+
+        return ($pathPrefix ? $pathPrefix . '.' : '') . $this->getFieldNamePrefix() . 'id';
+    }
+
+    public function getId(mixed $reference): mixed
+    {
+        return $this->storeAs === ClassMetadata::REFERENCE_STORE_AS_ID ? $reference : $reference[$this->getFieldName()];
+    }
+
+    private function getFieldNamePrefix(): string
+    {
+        if (! in_array($this->storeAs, [ClassMetadata::REFERENCE_STORE_AS_REF, ClassMetadata::REFERENCE_STORE_AS_DB_REF, ClassMetadata::REFERENCE_STORE_AS_DB_REF_WITH_DB])) {
+            throw new LogicException('Can only get a reference prefix for DBRef and reference arrays');
+        }
+
+        return $this->storeAs === ClassMetadata::REFERENCE_STORE_AS_REF ? '' : '$';
+    }
 }

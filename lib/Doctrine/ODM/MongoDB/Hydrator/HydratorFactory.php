@@ -226,6 +226,7 @@ EOF
 
         // ReferenceOne
         if (isset($data['%1$s']) || (! empty($this->class->fieldMappings['%2$s']['nullable']) && array_key_exists('%1$s', $data))) {
+            assert($this->class->fieldMappings['%2$s'] instanceof ReferenceMapping);
             $return = $data['%1$s'];
             if ($return !== null) {
                 if ($this->class->fieldMappings['%2$s']['storeAs'] !== ClassMetadata::REFERENCE_STORE_AS_ID && ! is_array($return)) {
@@ -233,7 +234,7 @@ EOF
                 }
 
                 $className = $this->dm->getClassNameForAssociation($this->class->fieldMappings['%2$s'], $return);
-                $identifier = ClassMetadata::getReferenceId($return, $this->class->fieldMappings['%2$s']['storeAs']);
+                $identifier = $this->class->fieldMappings['%2$s']->getId($return);
                 $targetMetadata = $this->dm->getClassMetadata($className);
                 $id = $targetMetadata->getPHPIdentifierValue($identifier);
                 $return = $this->dm->getReference($className, $id);
@@ -273,7 +274,8 @@ EOF
         $className = $mapping['targetDocument'];
         $targetClass = $this->dm->getClassMetadata($mapping['targetDocument']);
         $mappedByMapping = $targetClass->fieldMappings[$mapping['mappedBy']];
-        $mappedByFieldName = ClassMetadata::getReferenceFieldName($mappedByMapping['storeAs'], $mapping['mappedBy']);
+        assert($mappedByMapping instanceof ReferenceMapping);
+        $mappedByFieldName = $mappedByMapping->getFieldName($mapping['mappedBy']);
         $criteria = array_merge(
             [$mappedByFieldName => $data['_id']],
             $this->class->fieldMappings['%2$s']['criteria'] ?? []
@@ -369,6 +371,7 @@ use Doctrine\ODM\MongoDB\Hydrator\HydratorException;
 use Doctrine\ODM\MongoDB\Hydrator\HydratorInterface;
 use Doctrine\ODM\MongoDB\Query\Query;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceMapping;
 
 use function array_key_exists;
 use function gettype;

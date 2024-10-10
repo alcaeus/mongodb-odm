@@ -9,9 +9,12 @@ use Doctrine\ODM\MongoDB\Aggregation\Stage;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceMapping;
 use Doctrine\ODM\MongoDB\Persisters\DocumentPersister;
 use Doctrine\Persistence\Mapping\MappingException as BaseMappingException;
 use InvalidArgumentException;
+
+use function assert;
 
 /**
  * Fluent interface for building aggregation pipelines.
@@ -236,7 +239,8 @@ class Lookup extends Stage
             MappingException::referenceMappingNotFound($this->class->name, $fieldName);
         }
 
-        $referenceMapping  = $this->class->getFieldMapping($fieldName);
+        $referenceMapping = $this->class->getFieldMapping($fieldName);
+        assert($referenceMapping instanceof ReferenceMapping);
         $this->targetClass = $this->dm->getClassMetadata($referenceMapping['targetDocument']);
 
         $this->from = $this->targetClass->getCollection();
@@ -245,7 +249,7 @@ class Lookup extends Stage
             switch ($referenceMapping['storeAs']) {
                 case ClassMetadata::REFERENCE_STORE_AS_ID:
                 case ClassMetadata::REFERENCE_STORE_AS_REF:
-                    $referencedFieldName = ClassMetadata::getReferenceFieldName($referenceMapping['storeAs'], $referenceMapping['name']);
+                    $referencedFieldName = $referenceMapping->getFieldName($referenceMapping['name']);
                     break;
 
                 default:
@@ -261,10 +265,12 @@ class Lookup extends Stage
             }
 
             $mappedByMapping = $this->targetClass->getFieldMapping($referenceMapping['mappedBy']);
+            assert($mappedByMapping instanceof ReferenceMapping);
+
             switch ($mappedByMapping['storeAs']) {
                 case ClassMetadata::REFERENCE_STORE_AS_ID:
                 case ClassMetadata::REFERENCE_STORE_AS_REF:
-                    $referencedFieldName = ClassMetadata::getReferenceFieldName($mappedByMapping['storeAs'], $mappedByMapping['name']);
+                    $referencedFieldName = $mappedByMapping->getFieldName($mappedByMapping['name']);
                     break;
 
                 default:

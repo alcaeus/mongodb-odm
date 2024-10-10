@@ -729,6 +729,8 @@ final class DocumentPersister
         $owner      = $collection->getOwner();
         $groupedIds = [];
 
+        assert($mapping instanceof ReferenceMapping);
+
         if ($owner === null) {
             throw PersistentCollectionException::ownerRequiredToLoadCollection();
         }
@@ -742,7 +744,7 @@ final class DocumentPersister
                 throw HydratorException::associationItemTypeMismatch($owner::class, $mapping['name'], $key, 'array', gettype($reference));
             }
 
-            $identifier = ClassMetadata::getReferenceId($reference, $mapping['storeAs']);
+            $identifier = $mapping->getId($reference);
             $id         = $this->dm->getClassMetadata($className)->getPHPIdentifierValue($identifier);
 
             // create a reference to the class and id
@@ -831,10 +833,12 @@ final class DocumentPersister
             throw PersistentCollectionException::ownerRequiredToLoadCollection();
         }
 
-        $ownerClass        = $this->dm->getClassMetadata($owner::class);
-        $targetClass       = $this->dm->getClassMetadata($mapping['targetDocument']);
-        $mappedByMapping   = $targetClass->fieldMappings[$mapping['mappedBy']] ?? [];
-        $mappedByFieldName = ClassMetadata::getReferenceFieldName($mappedByMapping['storeAs'] ?? ClassMetadata::REFERENCE_STORE_AS_DB_REF, $mapping['mappedBy']);
+        $ownerClass      = $this->dm->getClassMetadata($owner::class);
+        $targetClass     = $this->dm->getClassMetadata($mapping['targetDocument']);
+        $mappedByMapping = $targetClass->fieldMappings[$mapping['mappedBy']] ?? [];
+        assert($mappedByMapping instanceof ReferenceMapping);
+
+        $mappedByFieldName = $mappedByMapping->getFieldName($mapping['mappedBy']);
 
         $criteria = $this->cm->merge(
             [$mappedByFieldName => $ownerClass->getIdentifierObject($owner)],
@@ -1295,8 +1299,8 @@ final class DocumentPersister
         $objectPropertyIsId = $targetClass->isIdentifier($objectProperty);
 
         // Prepare DBRef identifiers or the mapped field's property path
-        $fieldName = $objectPropertyIsId && ! empty($mapping['reference']) && $mapping['storeAs'] !== ClassMetadata::REFERENCE_STORE_AS_ID
-            ? ClassMetadata::getReferenceFieldName($mapping['storeAs'], $e[0])
+        $fieldName = $objectPropertyIsId && $mapping instanceof ReferenceMapping && $mapping['storeAs'] !== ClassMetadata::REFERENCE_STORE_AS_ID
+            ? $mapping->getFieldName($e[0])
             : $e[0] . '.' . $objectPropertyPrefix . $targetMapping['name'];
 
         // Process targetDocument identifier fields

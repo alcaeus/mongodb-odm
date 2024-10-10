@@ -34,7 +34,6 @@ use ProxyManager\Proxy\GhostObjectInterface;
 use RuntimeException;
 use Throwable;
 
-use function array_search;
 use function assert;
 use function gettype;
 use function is_object;
@@ -797,60 +796,7 @@ class DocumentManager implements ObjectManager
                 throw new InvalidArgumentException(sprintf('Reference type %s is invalid.', $storeAs));
         }
 
-        return $reference + $this->getDiscriminatorData($referenceMapping, $class);
-    }
-
-    /**
-     * Build discriminator portion of reference for specified reference mapping and class metadata.
-     *
-     * @param array                 $referenceMapping Mappings of reference for which discriminator data is created.
-     * @param ClassMetadata<object> $class            Metadata of reference document class.
-     * @psalm-param FieldMapping $referenceMapping
-     *
-     * @return array with next structure [{discriminator field} => {discriminator value}]
-     * @psalm-return array<string, class-string>
-     *
-     * @throws MappingException When discriminator map is present and reference class in not registered in it.
-     */
-    private function getDiscriminatorData(array|AssociationMapping $referenceMapping, ClassMetadata $class): array
-    {
-        $discriminatorField = null;
-        $discriminatorValue = null;
-        $discriminatorMap   = null;
-
-        if (isset($referenceMapping['discriminatorField'])) {
-            $discriminatorField = $referenceMapping['discriminatorField'];
-
-            if (isset($referenceMapping['discriminatorMap'])) {
-                $discriminatorMap = $referenceMapping['discriminatorMap'];
-            }
-        } else {
-            $discriminatorField = $class->discriminatorField;
-            $discriminatorValue = $class->discriminatorValue;
-            $discriminatorMap   = $class->discriminatorMap;
-        }
-
-        if ($discriminatorField === null) {
-            return [];
-        }
-
-        if ($discriminatorValue === null) {
-            if (! empty($discriminatorMap)) {
-                $pos = array_search($class->name, $discriminatorMap);
-
-                if ($pos !== false) {
-                    $discriminatorValue = $pos;
-                }
-            } else {
-                $discriminatorValue = $class->name;
-            }
-        }
-
-        if ($discriminatorValue === null) {
-            throw MappingException::unlistedClassInDiscriminatorMap($class->name);
-        }
-
-        return [$discriminatorField => $discriminatorValue];
+        return $reference + $referenceMapping->getDiscriminatorData($class);
     }
 
     /**

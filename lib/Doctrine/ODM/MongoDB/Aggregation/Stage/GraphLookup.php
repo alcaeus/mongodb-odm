@@ -282,8 +282,7 @@ class GraphLookup extends Stage
         return $this->dm->getUnitOfWork()->getDocumentPersister($class->name);
     }
 
-    /** @psalm-param FieldMapping $mapping */
-    private function getReferencedFieldName(string $fieldName, array|ReferenceMapping $mapping): string
+    private function getReferencedFieldName(string $fieldName, ReferenceMapping $mapping): string
     {
         if (! $this->targetClass) {
             throw new LogicException('Cannot use getReferencedFieldName when no target mapping was given.');
@@ -300,7 +299,7 @@ class GraphLookup extends Stage
         switch ($mapping['storeAs']) {
             case ClassMetadata::REFERENCE_STORE_AS_ID:
             case ClassMetadata::REFERENCE_STORE_AS_REF:
-                return ClassMetadata::getReferenceFieldName($mapping['storeAs'], $mapping['name']);
+                return $mapping->getFieldName($mapping['name']);
 
             default:
                 throw MappingException::cannotLookupDbRefReference($this->class->name, $fieldName);

@@ -6,6 +6,7 @@ namespace Doctrine\ODM\MongoDB\Mapping;
 
 use InvalidArgumentException;
 
+use function array_search;
 use function sprintf;
 
 /** @internal */
@@ -57,5 +58,41 @@ abstract class AssociationMapping extends FieldMapping
         }
 
         throw new InvalidArgumentException(sprintf('Invalid mapping detected for field %s', $mapping['fieldName']));
+    }
+
+    public function getDiscriminatorData(ClassMetadata $class): array
+    {
+        $discriminatorValue = null;
+
+        if (isset($this->discriminatorField)) {
+            $discriminatorField = $this->discriminatorField;
+            $discriminatorMap   = $this->discriminatorMap;
+        } else {
+            $discriminatorField = $class->discriminatorField;
+            $discriminatorValue = $class->discriminatorValue;
+            $discriminatorMap   = $class->discriminatorMap;
+        }
+
+        if ($discriminatorField === null) {
+            return [];
+        }
+
+        if ($discriminatorValue === null) {
+            if (! empty($discriminatorMap)) {
+                $pos = array_search($class->name, $discriminatorMap);
+
+                if ($pos !== false) {
+                    $discriminatorValue = $pos;
+                }
+            } else {
+                $discriminatorValue = $class->name;
+            }
+        }
+
+        if ($discriminatorValue === null) {
+            throw MappingException::unlistedClassInDiscriminatorMap($class->name);
+        }
+
+        return [$discriminatorField => $discriminatorValue];
     }
 }

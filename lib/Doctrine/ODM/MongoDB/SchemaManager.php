@@ -6,6 +6,8 @@ namespace Doctrine\ODM\MongoDB;
 
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadataFactoryInterface;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceMapping;
+use Doctrine\ODM\MongoDB\Mapping\ReferenceOneMapping;
 use Doctrine\ODM\MongoDB\Repository\ViewRepository;
 use InvalidArgumentException;
 use MongoDB\Driver\Exception\CommandException;
@@ -211,12 +213,12 @@ final class SchemaManager
                         $indexes[] = $embeddedIndex;
                     }
                 }
-            } elseif (isset($fieldMapping['reference']) && isset($fieldMapping['targetDocument'])) {
+            } elseif ($fieldMapping instanceof ReferenceMapping && isset($fieldMapping['targetDocument'])) {
                 foreach ($indexes as $idx => $index) {
                     $newKeys = [];
                     foreach ($index['keys'] as $key => $v) {
                         if ($key === $fieldMapping['name']) {
-                            $key = ClassMetadata::getReferenceFieldName($fieldMapping['storeAs'], $key);
+                            $key = $fieldMapping->getFieldName($key);
                         }
 
                         $newKeys[$key] = $v;
@@ -962,8 +964,8 @@ final class SchemaManager
                 $mapping   = $class->getFieldMapping($key);
                 $fieldName = $mapping['name'];
 
-                if ($class->isSingleValuedReference($key)) {
-                    $fieldName = ClassMetadata::getReferenceFieldName($mapping['storeAs'], $fieldName);
+                if ($mapping instanceof ReferenceOneMapping) {
+                    $fieldName = $mapping->getFieldName($fieldName);
                 }
             } else {
                 $fieldName = $key;
