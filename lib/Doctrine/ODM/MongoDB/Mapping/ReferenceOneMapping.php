@@ -13,6 +13,7 @@ class ReferenceOneMapping extends ReferenceMapping
      * @param array<string, class-string> $discriminatorMap
      */
     public function __construct(
+        ClassMetadata $owningDocument,
         string $fieldName,
         ?string $name = null,
         bool $nullable = false,
@@ -38,6 +39,7 @@ class ReferenceOneMapping extends ReferenceMapping
         array $prime = [],
     ) {
         parent::__construct(
+            owningDocument: $owningDocument,
             association: ClassMetadata::REFERENCE_ONE,
             fieldName: $fieldName,
             name: $name,
@@ -66,9 +68,10 @@ class ReferenceOneMapping extends ReferenceMapping
         );
     }
 
-    public static function fromMappingArray(array $mapping): self
+    public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new self(
+            owningDocument: $owningDocument,
             fieldName: $mapping['fieldName'],
             name: $mapping['name'],
             nullable: $mapping['nullable'] ?? false,

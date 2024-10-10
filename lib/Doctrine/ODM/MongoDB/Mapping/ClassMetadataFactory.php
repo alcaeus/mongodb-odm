@@ -312,7 +312,7 @@ final class ClassMetadataFactory extends AbstractClassMetadataFactory implements
             $declaringClass = $mapping['declared'] ?? $parentClass->name;
             $inheritedFrom  = $mapping['inherited'] ?? ($parentClass->isMappedSuperclass) ? null : $parentClass->name;
 
-            $subClass->addInheritedFieldMapping($mapping->inherit($declaringClass, $inheritedFrom));
+            $subClass->addInheritedFieldMapping($mapping->inherit($subClass, $declaringClass, $inheritedFrom));
         }
 
         foreach ($parentClass->reflFields as $name => $field) {

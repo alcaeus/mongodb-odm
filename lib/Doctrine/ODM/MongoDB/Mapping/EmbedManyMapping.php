@@ -16,6 +16,7 @@ class EmbedManyMapping extends EmbedMapping implements AssociationCollectionMapp
      * @param class-string<Collection>|null $collectionClass
      */
     public function __construct(
+        ClassMetadata $owningDocument,
         string $fieldName,
         ?string $name = null,
         bool $nullable = false,
@@ -30,6 +31,7 @@ class EmbedManyMapping extends EmbedMapping implements AssociationCollectionMapp
         public readonly bool $storeEmptyArray = false,
     ) {
         parent::__construct(
+            owningDocument: $owningDocument,
             association: ClassMetadata::EMBED_MANY,
             fieldName: $fieldName,
             name: $name,
@@ -45,9 +47,10 @@ class EmbedManyMapping extends EmbedMapping implements AssociationCollectionMapp
         );
     }
 
-    public static function fromMappingArray(array $mapping): self
+    public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new self(
+            owningDocument: $owningDocument,
             fieldName: $mapping['fieldName'],
             name: $mapping['name'],
             nullable: $mapping['nullable'] ?? false,

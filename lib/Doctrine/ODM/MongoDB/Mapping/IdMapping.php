@@ -11,6 +11,7 @@ final class IdMapping extends TypedFieldMapping
     public readonly bool $id;
 
     public function __construct(
+        ClassMetadata $owningDocument,
         string $fieldName,
         string $type = Type::ID,
         public string $generatorStrategy = 'auto',
@@ -20,6 +21,7 @@ final class IdMapping extends TypedFieldMapping
         $this->id = true;
 
         parent::__construct(
+            owningDocument: $owningDocument,
             fieldName: $fieldName,
             name: '_id',
             type: $type,
@@ -29,9 +31,10 @@ final class IdMapping extends TypedFieldMapping
         );
     }
 
-    public static function fromMappingArray(array $mapping): self
+    public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new self(
+            owningDocument: $owningDocument,
             fieldName: $mapping['fieldName'],
             type: $mapping['type'] ?? Type::ID,
             generatorStrategy: $mapping['strategy'] ?? 'auto',

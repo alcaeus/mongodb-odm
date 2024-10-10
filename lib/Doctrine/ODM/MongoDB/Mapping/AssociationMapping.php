@@ -18,6 +18,7 @@ abstract class AssociationMapping extends FieldMapping
      * @param list<string>                $alsoLoadFields
      */
     public function __construct(
+        ClassMetadata $owningDocument,
         public readonly int $association,
         string $fieldName,
         ?string $name = null,
@@ -38,6 +39,7 @@ abstract class AssociationMapping extends FieldMapping
         public readonly bool $orphanRemoval = false,
     ) {
         parent::__construct(
+            owningDocument: $owningDocument,
             fieldName: $fieldName,
             name: $name,
             nullable: $nullable,
@@ -47,14 +49,14 @@ abstract class AssociationMapping extends FieldMapping
         );
     }
 
-    public static function fromMappingArray(array $mapping): EmbedOneMapping|EmbedManyMapping|ReferenceOneMapping|ReferenceManyMapping
+    public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): EmbedOneMapping|EmbedManyMapping|ReferenceOneMapping|ReferenceManyMapping
     {
         if (isset($mapping['embedded'])) {
-            return EmbedMapping::fromMappingArray($mapping);
+            return EmbedMapping::fromMappingArray($owningDocument, $mapping);
         }
 
         if (isset($mapping['reference'])) {
-            return ReferenceMapping::fromMappingArray($mapping);
+            return ReferenceMapping::fromMappingArray($owningDocument, $mapping);
         }
 
         throw new InvalidArgumentException(sprintf('Invalid mapping detected for field %s', $mapping['fieldName']));

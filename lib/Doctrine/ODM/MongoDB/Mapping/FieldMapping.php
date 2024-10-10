@@ -21,6 +21,7 @@ abstract class FieldMapping implements ArrayAccess
     public ?string $inherited;
 
     public function __construct(
+        private ClassMetadata $owningDocument,
         /** Stores the property name in the mapped class */
         public readonly string $fieldName,
         ?string $name = null,
@@ -32,24 +33,25 @@ abstract class FieldMapping implements ArrayAccess
         $this->name = $name ?? $fieldName;
     }
 
-    public static function fromMappingArray(array $mapping): TypedFieldMapping|EmbedOneMapping|EmbedManyMapping|ReferenceOneMapping|ReferenceManyMapping
+    public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): TypedFieldMapping|EmbedOneMapping|EmbedManyMapping|ReferenceOneMapping|ReferenceManyMapping
     {
         if (($mapping['association'] ?? false) || ($mapping['reference'] ?? false) || ($mapping['embedded'] ?? false)) {
-            return AssociationMapping::fromMappingArray($mapping);
+            return AssociationMapping::fromMappingArray($owningDocument, $mapping);
         }
 
-        return TypedFieldMapping::fromMappingArray($mapping);
+        return TypedFieldMapping::fromMappingArray($owningDocument, $mapping);
     }
 
     /**
      * @param class-string      $declaringClass
      * @param class-string|null $inheritedFrom
      */
-    public function inherit(string $declaringClass, ?string $inheritedFrom): static
+    public function inherit(ClassMetadata $owningDocument, string $declaringClass, ?string $inheritedFrom): static
     {
-        $clone            = clone $this;
-        $clone->declared  = $declaringClass;
-        $clone->inherited = $inheritedFrom;
+        $clone                 = clone $this;
+        $clone->owningDocument = $owningDocument;
+        $clone->declared       = $declaringClass;
+        $clone->inherited      = $inheritedFrom;
 
         return $clone;
     }

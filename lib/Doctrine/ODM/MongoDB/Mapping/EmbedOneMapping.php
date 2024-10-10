@@ -12,6 +12,7 @@ class EmbedOneMapping extends EmbedMapping
      * @param array<string, class-string> $discriminatorMap
      */
     public function __construct(
+        ClassMetadata $owningDocument,
         string $fieldName,
         ?string $name = null,
         bool $nullable = false,
@@ -24,6 +25,7 @@ class EmbedOneMapping extends EmbedMapping
         ?string $defaultDiscriminatorValue = null,
     ) {
         parent::__construct(
+            owningDocument: $owningDocument,
             association: ClassMetadata::EMBED_ONE,
             fieldName: $fieldName,
             name: $name,
@@ -39,9 +41,10 @@ class EmbedOneMapping extends EmbedMapping
         );
     }
 
-    public static function fromMappingArray(array $mapping): self
+    public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new self(
+            owningDocument: $owningDocument,
             fieldName: $mapping['fieldName'],
             name: $mapping['name'],
             nullable: $mapping['nullable'] ?? false,

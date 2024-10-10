@@ -20,6 +20,7 @@ class ReferenceMapping extends AssociationMapping
      * @param array<string, class-string> $discriminatorMap
      */
     public function __construct(
+        ClassMetadata $owningDocument,
         int $association,
         string $fieldName,
         ?string $name = null,
@@ -51,6 +52,7 @@ class ReferenceMapping extends AssociationMapping
         }
 
         parent::__construct(
+            owningDocument: $owningDocument,
             association: $association,
             fieldName: $fieldName,
             name: $name,
@@ -76,7 +78,7 @@ class ReferenceMapping extends AssociationMapping
         $this->reference     = true;
     }
 
-    public static function fromMappingArray(array $mapping): ReferenceOneMapping|ReferenceManyMapping
+    public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): ReferenceOneMapping|ReferenceManyMapping
     {
         $cascades = isset($mapping['cascade']) ? array_map('strtolower', (array) $mapping['cascade']) : [];
 
@@ -87,8 +89,8 @@ class ReferenceMapping extends AssociationMapping
         $mapping['cascade'] = $cascades;
 
         return $mapping['type'] === ClassMetadata::ONE
-            ? ReferenceOneMapping::fromMappingArray($mapping)
-            : ReferenceManyMapping::fromMappingArray($mapping);
+            ? ReferenceOneMapping::fromMappingArray($owningDocument, $mapping)
+            : ReferenceManyMapping::fromMappingArray($owningDocument, $mapping);
     }
 
     public function getFieldName(string $pathPrefix = ''): string

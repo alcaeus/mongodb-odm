@@ -2391,7 +2391,7 @@ use function trigger_deprecation;
             );
         }
 
-        $fieldMapping                               = FieldMapping::fromMappingArray($mapping);
+        $fieldMapping                               = FieldMapping::fromMappingArray($this, $mapping);
         $this->fieldMappings[$mapping['fieldName']] = $fieldMapping;
 
         if (isset($mapping['association'])) {

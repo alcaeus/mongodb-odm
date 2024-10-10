@@ -15,6 +15,7 @@ class EmbedMapping extends AssociationMapping
      * @param array<string, class-string> $discriminatorMap
      */
     public function __construct(
+        ClassMetadata $owningDocument,
         int $association,
         string $fieldName,
         ?string $name = null,
@@ -32,6 +33,7 @@ class EmbedMapping extends AssociationMapping
         $this->isOwningSide = true;
 
         parent::__construct(
+            owningDocument: $owningDocument,
             association: $association,
             fieldName: $fieldName,
             name: $name,
@@ -53,10 +55,10 @@ class EmbedMapping extends AssociationMapping
         );
     }
 
-    public static function fromMappingArray(array $mapping): EmbedOneMapping|EmbedManyMapping
+    public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): EmbedOneMapping|EmbedManyMapping
     {
         return $mapping['type'] === ClassMetadata::ONE
-            ? EmbedOneMapping::fromMappingArray($mapping)
-            : EmbedManyMapping::fromMappingArray($mapping);
+            ? EmbedOneMapping::fromMappingArray($owningDocument, $mapping)
+            : EmbedManyMapping::fromMappingArray($owningDocument, $mapping);
     }
 }

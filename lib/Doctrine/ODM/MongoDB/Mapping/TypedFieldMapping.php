@@ -12,6 +12,7 @@ class TypedFieldMapping extends FieldMapping
 {
     /** @param class-string<BackedEnum>|null $enumType */
     public function __construct(
+        ClassMetadata $owningDocument,
         string $fieldName,
         ?string $name,
         public readonly ?string $type = Type::STRING,
@@ -23,6 +24,7 @@ class TypedFieldMapping extends FieldMapping
         array $alsoLoadFields = [],
     ) {
         parent::__construct(
+            owningDocument: $owningDocument,
             fieldName: $fieldName,
             name: $name,
             nullable: $nullable,
@@ -32,12 +34,13 @@ class TypedFieldMapping extends FieldMapping
         );
     }
 
-    public static function fromMappingArray(array $mapping): self
+    public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return match (true) {
-            isset($mapping['id']) => IdMapping::fromMappingArray($mapping),
-            isset($mapping['enumType']) => EnumFieldMapping::fromMappingArray($mapping),
+            isset($mapping['id']) => IdMapping::fromMappingArray($owningDocument, $mapping),
+            isset($mapping['enumType']) => EnumFieldMapping::fromMappingArray($owningDocument, $mapping),
             default => new self(
+                owningDocument: $owningDocument,
                 fieldName: $mapping['fieldName'],
                 name: $mapping['name'],
                 type: $mapping['type'],

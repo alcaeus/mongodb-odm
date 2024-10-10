@@ -17,6 +17,7 @@ class ReferenceManyMapping extends ReferenceMapping implements AssociationCollec
      * @param class-string<Collection>|null $collectionClass
      */
     public function __construct(
+        ClassMetadata $owningDocument,
         string $fieldName,
         ?string $name = null,
         bool $nullable = false,
@@ -46,6 +47,7 @@ class ReferenceManyMapping extends ReferenceMapping implements AssociationCollec
         public readonly bool $storeEmptyArray = false,
     ) {
         parent::__construct(
+            owningDocument: $owningDocument,
             association: ClassMetadata::REFERENCE_MANY,
             fieldName: $fieldName,
             name: $name,
@@ -74,9 +76,10 @@ class ReferenceManyMapping extends ReferenceMapping implements AssociationCollec
         );
     }
 
-    public static function fromMappingArray(array $mapping): self
+    public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new self(
+            owningDocument: $owningDocument,
             fieldName: $mapping['fieldName'],
             name: $mapping['name'],
             nullable: $mapping['nullable'] ?? false,
