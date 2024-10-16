@@ -31,7 +31,6 @@ use function method_exists;
  * Trait with methods needed to implement PersistentCollectionInterface.
  *
  * @psalm-import-type Hints from UnitOfWork
- * @psalm-import-type FieldMapping from ClassMetadata
  * @template TKey of array-key
  * @template T of object
  */
@@ -50,8 +49,8 @@ trait PersistentCollectionTrait
      */
     private ?object $owner = null;
 
-    /** @var array<string, mixed>|AssociationMapping|null */
-    private array|AssociationMapping|null $mapping = null;
+    /** @var AssociationMapping|null */
+    private ?AssociationMapping $mapping = null;
 
     /**
      * Whether the collection is dirty and needs to be synchronized with the database
@@ -202,7 +201,7 @@ trait PersistentCollectionTrait
         $this->isDirty = $dirty;
     }
 
-    public function setOwner(object $document, array|AssociationMapping $mapping)
+    public function setOwner(object $document, AssociationMapping $mapping)
     {
         $this->owner   = $document;
         $this->mapping = $mapping;

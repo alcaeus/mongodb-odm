@@ -1605,8 +1605,6 @@ use function trigger_deprecation;
      * This is mainly used to add inherited field mappings to derived classes.
      *
      * @internal
-     *
-     * @psalm-param FieldMapping $fieldMapping
      */
     public function addInheritedFieldMapping(FieldMapping $fieldMapping): void
     {
@@ -1839,7 +1837,7 @@ use function trigger_deprecation;
      *
      * @throws MappingException If the $fieldName is not found in the fieldMappings array.
      */
-    public function getFieldMapping(string $fieldName): array|FieldMapping
+    public function getFieldMapping(string $fieldName): FieldMapping
     {
         if (! isset($this->fieldMappings[$fieldName])) {
             throw MappingException::mappingNotFound($this->name, $fieldName);
@@ -2005,8 +2003,6 @@ use function trigger_deprecation;
      * Sets the version field mapping used for versioning. Sets the default
      * value to use depending on the column type.
      *
-     * @psalm-param FieldMapping $mapping
-     *
      * @throws LockException
      */
     public function setVersionMapping(array &$mapping): void
@@ -2039,8 +2035,6 @@ use function trigger_deprecation;
     /**
      * Sets the version field mapping used for versioning. Sets the default
      * value to use depending on the column type.
-     *
-     * @psalm-param FieldMapping $mapping
      *
      * @throws LockException
      */
@@ -2566,7 +2560,6 @@ use function trigger_deprecation;
         return in_array($name, self::ALLOWED_GRIDFS_FIELDS, true);
     }
 
-    /** @psalm-param FieldMapping $mapping */
     private function typeRequirementsAreMet(array $mapping): void
     {
         if ($mapping['type'] === Type::DECIMAL128 && ! extension_loaded('bcmath')) {
@@ -2574,7 +2567,6 @@ use function trigger_deprecation;
         }
     }
 
-    /** @psalm-param FieldMapping $mapping */
     private function checkDuplicateMapping(array $mapping): void
     {
         if ($mapping['notSaved'] ?? false) {

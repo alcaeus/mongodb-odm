@@ -7,7 +7,10 @@ namespace Doctrine\ODM\MongoDB\Mapping;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ODM\MongoDB\Utility\CollectionHelper;
 
-/** @internal */
+/**
+ * @internal
+ * @phpstan-import-type FieldMappingConfig from ClassMetadata
+ */
 class EmbedManyMapping extends EmbedMapping implements AssociationCollectionMapping
 {
     /**
@@ -47,6 +50,7 @@ class EmbedManyMapping extends EmbedMapping implements AssociationCollectionMapp
         );
     }
 
+    /** @psalm-param FieldMappingConfig $owningDocument */
     public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new self(

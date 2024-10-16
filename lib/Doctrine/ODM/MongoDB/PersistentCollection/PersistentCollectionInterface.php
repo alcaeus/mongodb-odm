@@ -6,6 +6,7 @@ namespace Doctrine\ODM\MongoDB\PersistentCollection;
 
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Doctrine\ODM\MongoDB\Mapping\AssociationMapping;
 use Doctrine\ODM\MongoDB\MongoDBException;
 use Doctrine\ODM\MongoDB\UnitOfWork;
 use Doctrine\Persistence\Mapping\ClassMetadata;
@@ -15,7 +16,6 @@ use Doctrine\Persistence\Mapping\ClassMetadata;
  *
  * @internal
  *
- * @psalm-import-type FieldMapping from \Doctrine\ODM\MongoDB\Mapping\ClassMetadata
  * @psalm-import-type Hints from UnitOfWork
  *
  * @template TKey of array-key
@@ -92,11 +92,9 @@ interface PersistentCollectionInterface extends Collection
      * Sets the collection's owning document together with the AssociationMapping that
      * describes the association between the owner and the elements of the collection.
      *
-     * @psalm-param FieldMapping $mapping
-     *
      * @return void
      */
-    public function setOwner(object $document, array $mapping);
+    public function setOwner(object $document, AssociationMapping $mapping);
 
     /**
      * Tells this collection to take a snapshot of its current state reindexing

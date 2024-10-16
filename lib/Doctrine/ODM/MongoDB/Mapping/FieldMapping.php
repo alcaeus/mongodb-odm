@@ -6,7 +6,10 @@ namespace Doctrine\ODM\MongoDB\Mapping;
 
 use ArrayAccess;
 
-/** @internal */
+/**
+ * @internal
+ * @phpstan-import-type FieldMappingConfig from ClassMetadata
+ */
 abstract class FieldMapping implements ArrayAccess
 {
     use ArrayAccessImplementation;
@@ -33,6 +36,7 @@ abstract class FieldMapping implements ArrayAccess
         $this->name = $name ?? $fieldName;
     }
 
+    /** @phpstan-param FieldMappingConfig $mapping */
     public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): TypedFieldMapping|EmbedOneMapping|EmbedManyMapping|ReferenceOneMapping|ReferenceManyMapping
     {
         if (($mapping['association'] ?? false) || ($mapping['reference'] ?? false) || ($mapping['embedded'] ?? false)) {

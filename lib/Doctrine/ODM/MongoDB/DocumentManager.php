@@ -51,7 +51,6 @@ use function trigger_deprecation;
  *     $dm = DocumentManager::create(new Connection(), $config);
  *
  * @psalm-import-type CommitOptions from UnitOfWork
- * @psalm-import-type FieldMapping from ClassMetadata
  */
 class DocumentManager implements ObjectManager
 {
@@ -746,14 +745,12 @@ class DocumentManager implements ObjectManager
     /**
      * Returns a reference to the supplied document.
      *
-     * @psalm-param FieldMapping $referenceMapping
-     *
      * @return mixed The reference for the document in question, according to the desired mapping
      *
      * @throws MappingException
      * @throws RuntimeException
      */
-    public function createReference(object $document, array|ReferenceMapping $referenceMapping)
+    public function createReference(object $document, ReferenceMapping $referenceMapping)
     {
         $class = $this->getClassMetadata($document::class);
         $id    = $this->unitOfWork->getDocumentIdentifier($document);
@@ -837,12 +834,11 @@ class DocumentManager implements ObjectManager
      *
      * @internal
      *
-     * @param FieldMapping              $mapping
      * @param array<string, mixed>|null $data
      *
      * @psalm-return class-string
      */
-    public function getClassNameForAssociation(array|AssociationMapping $mapping, $data): string
+    public function getClassNameForAssociation(AssociationMapping $mapping, $data): string
     {
         $discriminatorField = $mapping['discriminatorField'] ?? null;
 

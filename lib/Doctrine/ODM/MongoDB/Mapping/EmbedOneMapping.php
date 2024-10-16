@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Doctrine\ODM\MongoDB\Mapping;
 
-/** @internal */
+/**
+ * @internal
+ * @phpstan-import-type FieldMappingConfig from ClassMetadata
+ */
 class EmbedOneMapping extends EmbedMapping
 {
     /**
@@ -41,6 +44,7 @@ class EmbedOneMapping extends EmbedMapping
         );
     }
 
+    /** @phpstan-param FieldMappingConfig $mapping */
     public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new self(

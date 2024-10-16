@@ -9,6 +9,10 @@ use LogicException;
 use function array_map;
 use function in_array;
 
+/**
+ * @internal
+ * @phpstan-import-type FieldMappingConfig from ClassMetadata
+ */
 class ReferenceMapping extends AssociationMapping
 {
     public readonly bool $isOwningSide;
@@ -78,6 +82,7 @@ class ReferenceMapping extends AssociationMapping
         $this->reference     = true;
     }
 
+    /** @phpstan-param FieldMappingConfig $mapping */
     public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): ReferenceOneMapping|ReferenceManyMapping
     {
         $cascades = isset($mapping['cascade']) ? array_map('strtolower', (array) $mapping['cascade']) : [];

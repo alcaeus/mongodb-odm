@@ -89,9 +89,8 @@ class ResolveTargetDocumentListener implements EventSubscriber
 
     /**
      * @param ClassMetadata<object> $classMetadata
-     * @psalm-param AssociationFieldMapping $mapping
      */
-    private function remapAssociation(ClassMetadata $classMetadata, array|AssociationMapping $mapping): void
+    private function remapAssociation(ClassMetadata $classMetadata, AssociationMapping $mapping): void
     {
         $newMapping              = $this->resolveTargetDocuments[$mapping['targetDocument']];
         $newMapping              = array_replace_recursive($mapping, $newMapping);

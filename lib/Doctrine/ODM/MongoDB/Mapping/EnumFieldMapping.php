@@ -7,7 +7,10 @@ namespace Doctrine\ODM\MongoDB\Mapping;
 use BackedEnum;
 use Doctrine\ODM\MongoDB\Types\Type;
 
-/** @internal */
+/**
+ * @internal
+ * @phpstan-import-type FieldMappingConfig from ClassMetadata
+ */
 class EnumFieldMapping extends TypedFieldMapping
 {
     /** @param class-string<BackedEnum>|null $enumType */
@@ -32,6 +35,7 @@ class EnumFieldMapping extends TypedFieldMapping
         );
     }
 
+    /** @phpstan-param FieldMappingConfig $mapping */
     public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new EnumFieldMapping(

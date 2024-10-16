@@ -39,7 +39,6 @@ use function sprintf;
  *
  * @internal
  *
- * @psalm-import-type FieldMapping from ClassMetadata
  * @psalm-import-type Hints from UnitOfWork
  */
 final class ReferencePrimer
@@ -144,7 +143,7 @@ final class ReferencePrimer
      *
      * @return array{fieldName: string, class: ClassMetadata<object>, documents: array<object>|Traversable<object>, mapping: FieldMapping}
      */
-    private function parseDotSyntaxForPrimer(string $fieldName, ClassMetadata $class, $documents, array|FieldMapping|null $mapping = null): array
+    private function parseDotSyntaxForPrimer(string $fieldName, ClassMetadata $class, $documents, ?FieldMapping $mapping = null): array
     {
         // Recursion passthrough:
         if ($mapping !== null) {

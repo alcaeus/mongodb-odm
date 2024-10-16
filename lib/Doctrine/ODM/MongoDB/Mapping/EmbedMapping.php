@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Doctrine\ODM\MongoDB\Mapping;
 
-/** @internal */
+/**
+ * @internal
+ * @phpstan-import-type FieldMappingConfig from ClassMetadata
+ */
 class EmbedMapping extends AssociationMapping
 {
     public readonly bool $embedded;
@@ -55,6 +58,7 @@ class EmbedMapping extends AssociationMapping
         );
     }
 
+    /** @phpstan-param FieldMappingConfig $mapping */
     public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): EmbedOneMapping|EmbedManyMapping
     {
         return $mapping['type'] === ClassMetadata::ONE

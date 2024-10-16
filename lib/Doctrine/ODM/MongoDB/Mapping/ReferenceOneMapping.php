@@ -6,6 +6,10 @@ namespace Doctrine\ODM\MongoDB\Mapping;
 
 use function in_array;
 
+/**
+ * @internal
+ * @phpstan-import-type FieldMappingConfig from ClassMetadata
+ */
 class ReferenceOneMapping extends ReferenceMapping
 {
     /**
@@ -68,6 +72,7 @@ class ReferenceOneMapping extends ReferenceMapping
         );
     }
 
+    /** @phpstan-param FieldMappingConfig $mapping */
     public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new self(

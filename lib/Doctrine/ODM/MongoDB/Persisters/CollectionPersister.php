@@ -61,7 +61,7 @@ final class CollectionPersister
 
         foreach ($collections as $collection) {
             $mapping = $collection->getMapping();
-            if ($mapping instanceof ReferenceMapping && $mapping['isInverseSide']) {
+            if ($mapping instanceof ReferenceMapping && $mapping->isInverseSide) {
                 continue; // ignore inverse side
             }
 

@@ -21,7 +21,6 @@ use function is_array;
 use function is_string;
 use function substr;
 
-/** @psalm-import-type FieldMapping from ClassMetadata */
 class GraphLookup extends Stage
 {
     private ?string $from;
@@ -93,7 +92,7 @@ class GraphLookup extends Stage
 
         // connectFromField is a reference - do a sanity check
         $referenceMapping = $this->targetClass->getFieldMapping($connectFromField);
-        if ($referenceMapping['targetDocument'] !== $this->targetClass->name) {
+        if (! $referenceMapping instanceof ReferenceMapping || $referenceMapping['targetDocument'] !== $this->targetClass->name) {
             throw MappingException::connectFromFieldMustReferenceSameDocument($connectFromField);
         }
 
@@ -226,6 +225,7 @@ class GraphLookup extends Stage
         }
 
         $referenceMapping  = $this->class->getFieldMapping($fieldName);
+        assert($referenceMapping instanceof ReferenceMapping);
         $this->targetClass = $this->dm->getClassMetadata($referenceMapping['targetDocument']);
 
         $this->from = $this->targetClass->getCollection();
@@ -294,6 +294,7 @@ class GraphLookup extends Stage
             }
 
             $mapping = $this->targetClass->getFieldMapping($mapping['mappedBy']);
+            assert($mapping instanceof ReferenceMapping);
         }
 
         switch ($mapping['storeAs']) {

@@ -84,7 +84,6 @@ use function trigger_deprecation;
  *      writeConcern?: WriteConcern
  * }
  * @psalm-import-type Hints from UnitOfWork
- * @psalm-import-type FieldMapping from ClassMetadata
  * @psalm-import-type SortMeta from Sort
  * @psalm-import-type SortShape from Sort
  */
@@ -1610,14 +1609,12 @@ final class DocumentPersister
     }
 
     /**
-     * @psalm-param FieldMapping $mapping
-     *
      * @psalm-return array<array{
      *     string,
      *     string|ObjectId|array<string, mixed>
      * }>
      */
-    private function prepareReference(string $fieldName, object $value, array|ReferenceMapping $mapping, bool $inNewObj): array
+    private function prepareReference(string $fieldName, object $value, ReferenceMapping $mapping, bool $inNewObj): array
     {
         $reference = $this->dm->createReference($value, $mapping);
         if ($inNewObj || $mapping['storeAs'] === ClassMetadata::REFERENCE_STORE_AS_ID) {

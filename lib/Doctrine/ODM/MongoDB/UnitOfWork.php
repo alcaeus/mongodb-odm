@@ -57,8 +57,6 @@ use function trigger_deprecation;
  * "object-level" transaction and for writing out changes to the database
  * in the correct order.
  *
- * @psalm-import-type FieldMapping from ClassMetadata
- * @psalm-import-type AssociationFieldMapping from ClassMetadata
  * @psalm-type ChangeSet = array{
  *      0: mixed,
  *      1: mixed
@@ -321,10 +319,8 @@ final class UnitOfWork implements PropertyChangedListener
      * Sets the parent association for a given embedded document.
      *
      * @internal
-     *
-     * @psalm-param FieldMapping $mapping
      */
-    public function setParentAssociation(object $document, array|AssociationMapping $mapping, ?object $parent, string $propertyPath): void
+    public function setParentAssociation(object $document, AssociationMapping $mapping, ?object $parent, string $propertyPath): void
     {
         $oid                                   = spl_object_hash($document);
         $this->embeddedDocumentsRegistry[$oid] = $document;
@@ -962,7 +958,6 @@ final class UnitOfWork implements PropertyChangedListener
      * Computes the changes of an association.
      *
      * @param mixed $value The value of the association.
-     * @psalm-param AssociationFieldMapping $assoc
      *
      * @throws InvalidArgumentException
      */
@@ -1882,7 +1877,7 @@ final class UnitOfWork implements PropertyChangedListener
      *                       version attribute and the version check against the
      *                       managed copy fails.
      */
-    private function doMerge(object $document, array &$visited, ?object $prevManagedCopy = null, array|AssociationMapping|null $assoc = null): object
+    private function doMerge(object $document, array &$visited, ?object $prevManagedCopy = null, ?AssociationMapping $assoc = null): object
     {
         $oid = spl_object_hash($document);
 

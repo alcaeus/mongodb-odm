@@ -9,6 +9,10 @@ use Doctrine\ODM\MongoDB\Utility\CollectionHelper;
 
 use function in_array;
 
+/**
+ * @internal
+ * @phpstan-import-type FieldMappingConfig from ClassMetadata
+ */
 class ReferenceManyMapping extends ReferenceMapping implements AssociationCollectionMapping
 {
     /**
@@ -76,6 +80,7 @@ class ReferenceManyMapping extends ReferenceMapping implements AssociationCollec
         );
     }
 
+    /** @phpstan-param FieldMappingConfig $mapping */
     public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new self(

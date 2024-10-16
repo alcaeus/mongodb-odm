@@ -6,6 +6,10 @@ namespace Doctrine\ODM\MongoDB\Mapping;
 
 use Doctrine\ODM\MongoDB\Types\Type;
 
+/**
+ * @internal
+ * @phpstan-import-type FieldMappingConfig from ClassMetadata
+ */
 final class IdMapping extends TypedFieldMapping
 {
     public readonly bool $id;
@@ -31,6 +35,7 @@ final class IdMapping extends TypedFieldMapping
         );
     }
 
+    /** @phpstan-param FieldMappingConfig $mapping */
     public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): self
     {
         return new self(

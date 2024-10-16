@@ -34,8 +34,6 @@ use function strtolower;
 
 /**
  * Query expression builder for ODM.
- *
- * @psalm-import-type FieldMapping from ClassMetadata
  */
 class Expr
 {
@@ -1347,17 +1345,18 @@ class Expr
     /**
      * Gets reference mapping for current field from current class or its descendants.
      *
-     * @return FieldMapping
-     *
      * @throws MappingException
      */
-    private function getReferenceMapping(): array|ReferenceMapping
+    private function getReferenceMapping(): ReferenceMapping
     {
         $this->requiresCurrentField(__METHOD__);
         assert($this->currentField !== null);
 
         try {
-            return $this->class->getFieldMapping($this->currentField);
+            $fieldMapping = $this->class->getFieldMapping($this->currentField);
+            assert($fieldMapping instanceof ReferenceMapping);
+
+            return $fieldMapping;
         } catch (MappingException $e) {
             if (empty($this->class->discriminatorMap)) {
                 throw $e;
@@ -1379,7 +1378,7 @@ class Expr
                 $foundIn = $childClass;
             }
 
-            if ($mapping === null) {
+            if (! $mapping instanceof ReferenceMapping) {
                 throw MappingException::mappingNotFoundInClassNorDescendants($this->class->name, $this->currentField);
             }
 

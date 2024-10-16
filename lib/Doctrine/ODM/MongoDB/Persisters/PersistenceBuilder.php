@@ -30,8 +30,6 @@ use function assert;
  * UnitOfWork to build queries using atomic operators like $set, $unset, etc.
  *
  * @internal
- *
- * @psalm-import-type FieldMapping from ClassMetadata
  */
 final class PersistenceBuilder
 {
@@ -327,11 +325,10 @@ final class PersistenceBuilder
      * simple reference, null may be returned.
      *
      * @param object $document
-     * @psalm-param FieldMapping $referenceMapping
      *
      * @return array<string, mixed>|null
      */
-    public function prepareReferencedDocumentValue(array|ReferenceMapping $referenceMapping, $document)
+    public function prepareReferencedDocumentValue(ReferenceMapping $referenceMapping, $document)
     {
         return $this->dm->createReference($document, $referenceMapping);
     }
@@ -352,13 +349,12 @@ final class PersistenceBuilder
      *
      * @param object $embeddedDocument
      * @param bool   $includeNestedCollections
-     * @psalm-param FieldMapping  $embeddedMapping
      *
      * @return array<string, mixed>|object
      *
      * @throws UnexpectedValueException If an unsupported associating mapping is found.
      */
-    public function prepareEmbeddedDocumentValue(array|EmbedMapping $embeddedMapping, $embeddedDocument, $includeNestedCollections = false)
+    public function prepareEmbeddedDocumentValue(EmbedMapping $embeddedMapping, $embeddedDocument, $includeNestedCollections = false)
     {
         $embeddedDocumentValue = [];
         $class                 = $this->dm->getClassMetadata($embeddedDocument::class);
@@ -467,19 +463,20 @@ final class PersistenceBuilder
      *
      * @param object $document
      * @param bool   $includeNestedCollections
-     * @psalm-param FieldMapping  $mapping
      *
      * @return mixed[]|object|null
      *
      * @throws InvalidArgumentException If the mapping is neither embedded nor reference.
      */
-    public function prepareAssociatedDocumentValue(array|AssociationMapping $mapping, $document, $includeNestedCollections = false)
+    public function prepareAssociatedDocumentValue(AssociationMapping $mapping, $document, $includeNestedCollections = false)
     {
         if (isset($mapping['embedded'])) {
+            assert($mapping instanceof EmbedMapping);
             return $this->prepareEmbeddedDocumentValue($mapping, $document, $includeNestedCollections);
         }
 
         if (isset($mapping['reference'])) {
+            assert($mapping instanceof ReferenceMapping);
             return $this->prepareReferencedDocumentValue($mapping, $document);
         }
 

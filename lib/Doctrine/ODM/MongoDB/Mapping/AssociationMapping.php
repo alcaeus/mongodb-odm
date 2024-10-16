@@ -9,7 +9,10 @@ use InvalidArgumentException;
 use function array_search;
 use function sprintf;
 
-/** @internal */
+/**
+ * @internal
+ * @phpstan-import-type FieldMappingConfig from ClassMetadata
+ */
 abstract class AssociationMapping extends FieldMapping
 {
     /**
@@ -49,6 +52,7 @@ abstract class AssociationMapping extends FieldMapping
         );
     }
 
+    /** @phpstan-param FieldMappingConfig $mapping */
     public static function fromMappingArray(ClassMetadata $owningDocument, array $mapping): EmbedOneMapping|EmbedManyMapping|ReferenceOneMapping|ReferenceManyMapping
     {
         if (isset($mapping['embedded'])) {
@@ -62,6 +66,7 @@ abstract class AssociationMapping extends FieldMapping
         throw new InvalidArgumentException(sprintf('Invalid mapping detected for field %s', $mapping['fieldName']));
     }
 
+    /** @return array{string, mixed} */
     public function getDiscriminatorData(ClassMetadata $class): array
     {
         $discriminatorValue = null;

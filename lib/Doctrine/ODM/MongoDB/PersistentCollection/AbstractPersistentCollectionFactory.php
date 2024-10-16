@@ -15,7 +15,7 @@ use Doctrine\ODM\MongoDB\PersistentCollection;
  */
 abstract class AbstractPersistentCollectionFactory implements PersistentCollectionFactory
 {
-    public function create(DocumentManager $dm, array|AssociationMapping $mapping, ?BaseCollection $coll = null): PersistentCollectionInterface
+    public function create(DocumentManager $dm, AssociationMapping $mapping, ?BaseCollection $coll = null): PersistentCollectionInterface
     {
         if ($coll === null) {
             $coll = ! empty($mapping['collectionClass'])

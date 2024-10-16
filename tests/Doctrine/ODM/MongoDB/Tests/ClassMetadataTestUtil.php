@@ -9,7 +9,6 @@ use Doctrine\ODM\MongoDB\Mapping\FieldMapping;
 use Doctrine\ODM\MongoDB\Types\Type;
 
 /**
- * @psalm-import-type FieldMapping from ClassMetadata
  * @psalm-import-type FieldMappingConfig from ClassMetadata
  */
 class ClassMetadataTestUtil
