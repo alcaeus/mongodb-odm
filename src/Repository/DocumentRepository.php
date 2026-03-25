@@ -7,7 +7,9 @@ namespace Doctrine\ODM\MongoDB\Repository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\Selectable;
+use Doctrine\ODM\MongoDB\Aggregation\Aggregation;
 use Doctrine\ODM\MongoDB\Aggregation\Builder as AggregationBuilder;
+use Doctrine\ODM\MongoDB\Builder\Encoder\FieldPathEncoder;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Iterator\Iterator;
 use Doctrine\ODM\MongoDB\LockException;
@@ -19,10 +21,14 @@ use Doctrine\ODM\MongoDB\Query\Builder as QueryBuilder;
 use Doctrine\ODM\MongoDB\Query\QueryExpressionVisitor;
 use Doctrine\ODM\MongoDB\UnitOfWork;
 use Doctrine\Persistence\ObjectRepository;
+use MongoDB\Builder\BuilderEncoder;
+use MongoDB\Builder\Pipeline;
+use MongoDB\Builder\Type\FieldPathInterface;
 
 use function assert;
 use function count;
 use function is_array;
+use function is_string;
 use function trigger_deprecation;
 
 /**
@@ -64,6 +70,25 @@ class DocumentRepository implements ObjectRepository, Selectable
         $this->dm           = $dm;
         $this->uow          = $uow;
         $this->class        = $classMetadata;
+    }
+
+    /**
+     * Runs an aggregation pipeline
+     *
+     * @param array<string, mixed> $options
+     */
+    public function aggregate(Pipeline $pipeline, array $options = [], string|ClassMetadata|null $hydrationClass = null): Aggregation
+    {
+        $hydrationClass = is_string($hydrationClass) ? $this->dm->getClassMetadata($hydrationClass) : $hydrationClass;
+
+        return new Aggregation(
+            $this->dm,
+            $hydrationClass,
+            $this->dm->getDocumentCollection($this->documentName),
+            // TODO: don't create; use from service or DM
+            (new BuilderEncoder([FieldPathInterface::class => new FieldPathEncoder($this->class)]))->encode($pipeline),
+            $options,
+        );
     }
 
     /**
