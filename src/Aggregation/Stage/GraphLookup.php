@@ -256,7 +256,7 @@ class GraphLookup extends Stage
         }
 
         if (is_string($expression) && substr($expression, 0, 1) === '$') {
-            return '$' . $this->getDocumentPersister($this->class)->prepareFieldName(substr($expression, 1));
+            return '$' . $this->getDocumentPersister($this->class)->getCriteriaPreparer()->prepareFieldName(substr($expression, 1));
         }
 
         return Type::convertPHPToDatabaseValue(Expr::convertExpression($expression));
@@ -268,7 +268,7 @@ class GraphLookup extends Stage
             return $fieldName;
         }
 
-        return $this->getDocumentPersister($this->targetClass)->prepareFieldName($fieldName);
+        return $this->getDocumentPersister($this->targetClass)->getCriteriaPreparer()->prepareFieldName($fieldName);
     }
 
     private function getDocumentPersister(ClassMetadata $class): DocumentPersister

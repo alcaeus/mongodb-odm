@@ -47,7 +47,7 @@ abstract class AbstractReplace extends Operator
         }
 
         if (is_string($expression) && substr($expression, 0, 1) === '$') {
-            return '$' . $this->getDocumentPersister()->prepareFieldName(substr($expression, 1));
+            return '$' . $this->getDocumentPersister()->getCriteriaPreparer()->prepareFieldName(substr($expression, 1));
         }
 
         return Type::convertPHPToDatabaseValue(Expr::convertExpression($expression));

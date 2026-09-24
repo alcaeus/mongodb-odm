@@ -519,7 +519,7 @@ class Expr implements
      */
     public function field(string $fieldName): static
     {
-        $fieldName          = $this->getDocumentPersister()->prepareFieldName($fieldName);
+        $fieldName          = $this->getDocumentPersister()->getCriteriaPreparer()->prepareFieldName($fieldName);
         $this->currentField = $fieldName;
 
         return $this;
@@ -1114,7 +1114,7 @@ class Expr implements
     private function prepareArgument($expression)
     {
         if (is_string($expression) && substr($expression, 0, 1) === '$') {
-            return '$' . $this->getDocumentPersister()->prepareFieldName(substr($expression, 1));
+            return '$' . $this->getDocumentPersister()->getCriteriaPreparer()->prepareFieldName(substr($expression, 1));
         }
 
         if (is_array($expression)) {
